@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#080b14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Valdória — Arena de Gladiadores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Cinzel+Decorative:wght@700;900&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070a12;--bg2:#0b1020;--panel-1:#183463;--panel-2:#0c1a35;
+  --silver:#c3ccdf;--silver-d:#8b97b4;--silver-l:#eaf0fb;
+  --gold:#e6b24d;--gold-l:#f7d78b;--ember:#ec6a20;--cream:#ece4d0;--ink:#dfe6f4;
+  --fogo:#ec5a22;--agua:#2aa9d9;--natureza:#46b45c;--raio:#f2c31a;
+  --comum:#c3ccdf;--incomum:#46b45c;--rara:#2f74d6;--epica:#8a45c8;--lendaria:#e6b24d;--mitica:#b3243f;
+  --ok:#5ad07a;--danger:#e0533c;
+  --line:rgba(195,204,223,.28);--line-strong:rgba(195,204,223,.5);
+  --shadow:0 10px 34px rgba(0,0,0,.55);--frame-w:min(480px,100vw);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#000;color:var(--ink);font-family:"EB Garamond",Georgia,serif}
+body{display:flex;justify-content:center;overscroll-behavior:none}
+button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:none;text-align:left}
+img{max-width:100%;display:block}
+#app{position:relative;width:var(--frame-w);height:100dvh;max-height:100dvh;overflow:hidden;isolation:isolate;
+  background:radial-gradient(120% 80% at 50% -10%,#122544 0%,transparent 60%),radial-gradient(140% 100% at 50% 120%,#1a0e08 0%,transparent 55%),linear-gradient(180deg,var(--bg),var(--bg2) 60%,#05070e);
+  box-shadow:0 0 60px rgba(0,0,0,.8)}
+#embers{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.55}
+.screen{position:absolute;inset:0;z-index:1;display:none;flex-direction:column;
+  padding:calc(env(safe-area-inset-top) + 8px) 14px calc(env(safe-area-inset-bottom) + 8px);
+  overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;animation:fade .4s ease both}
+.screen.active{display:flex}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.screen.has-nav{padding-bottom:calc(env(safe-area-inset-bottom) + 78px)}
+.screen.has-top{padding-top:calc(env(safe-area-inset-top) + 62px)}
+.bg{position:absolute;inset:0;z-index:-1;background-size:cover;background-position:center;opacity:.9}
+.bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,9,16,.45),rgba(6,9,16,.82))}
+/* full-screen scene backdrop (swapped per screen) */
+#appbg{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;opacity:0;transition:opacity .55s ease;pointer-events:none}
+#appbg.show{opacity:1}
+#appbg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,10,18,.5),rgba(7,10,18,.72) 55%,rgba(7,10,18,.92))}
+#appbg.duel::after{background:linear-gradient(180deg,rgba(7,10,18,.66),rgba(7,10,18,.82) 55%,rgba(7,10,18,.95))}
+/* panel */
+.panel{position:relative;border-radius:16px;background:linear-gradient(158deg,var(--panel-1),var(--panel-2) 72%);
+  border:1px solid var(--line-strong);box-shadow:inset 0 0 0 2px rgba(9,16,32,.6),inset 0 1px 0 rgba(230,240,255,.12),var(--shadow)}
+.panel::before{content:"";position:absolute;inset:6px;border:1px solid var(--line);border-radius:10px;pointer-events:none}
+.panel.pad{padding:16px}
+.corner{position:absolute;width:9px;height:9px;background:linear-gradient(135deg,var(--silver-l),var(--silver-d));transform:rotate(45deg);box-shadow:0 0 6px rgba(0,0,0,.6);z-index:2}
+.corner.tl{top:-4px;left:-4px}.corner.tr{top:-4px;right:-4px}.corner.bl{bottom:-4px;left:-4px}.corner.br{bottom:-4px;right:-4px}
+.rule{height:1px;background:linear-gradient(90deg,transparent,var(--line-strong),transparent);margin:12px 0}
+/* buttons */
+.btn{position:relative;display:flex;align-items:center;justify-content:center;gap:9px;padding:14px 18px;border-radius:12px;
+  font-family:"Cinzel",serif;font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:13px;color:var(--cream);
+  background:linear-gradient(180deg,#22467e,#0e2247);border:1px solid var(--line-strong);
+  box-shadow:inset 0 1px 0 rgba(230,240,255,.18),inset 0 0 0 2px rgba(8,14,30,.5),0 6px 16px rgba(0,0,0,.5);transition:transform .12s,filter .2s}
+.btn:active{transform:translateY(2px) scale(.99);filter:brightness(1.1)}
+.btn:disabled{opacity:.45;filter:grayscale(.4)}
+.btn .ico{width:18px;height:18px;flex:0 0 auto}
+.btn.gold{background:linear-gradient(180deg,#f0c766,#c98a25);color:#2a1806;border-color:#f7d78b;text-shadow:0 1px 0 rgba(255,255,255,.3)}
+.btn.big{padding:18px;font-size:15px}.btn.sm{padding:9px 14px;font-size:11px}
+.btn.ghost{background:linear-gradient(180deg,rgba(38,73,127,.35),rgba(10,23,48,.35))}
+.btn.block{width:100%}.btn.danger{background:linear-gradient(180deg,#c14231,#7a2519);border-color:#e0533c}
+/* top bar */
+.topbar{position:absolute;top:0;left:0;right:0;z-index:6;display:flex;align-items:center;gap:9px;
+  padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;background:linear-gradient(180deg,rgba(8,13,26,.96),rgba(8,13,26,.5) 80%,transparent);backdrop-filter:blur(4px)}
+.topbar.hidden{display:none}
+.crest{width:40px;height:40px;border-radius:50%;flex:0 0 auto;background:radial-gradient(circle at 35% 30%,#2a4a82,#0b1730);border:2px solid var(--silver-d);box-shadow:inset 0 0 6px rgba(0,0,0,.6);display:grid;place-items:center}
+.who{flex:1;min-width:0;line-height:1.15}
+.who .nm{font-family:"Cinzel",serif;font-weight:600;color:var(--cream);font-size:13px;letter-spacing:.05em}
+.who .rk{font-size:11px;color:var(--silver-d)}
+.res{display:flex;align-items:center;gap:5px;padding:5px 9px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(10,23,48,.7);border:1px solid var(--line)}
+.res .ico{width:14px;height:14px}
+.gearbtn{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(10,23,48,.7);border:1px solid var(--line)}
+.gearbtn .ico{width:17px;height:17px}
+/* bottom nav */
+.bottomnav{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;justify-content:space-around;
+  padding:8px 6px calc(env(safe-area-inset-bottom) + 8px);background:linear-gradient(0deg,rgba(6,9,16,.98),rgba(6,9,16,.7) 70%,transparent);backdrop-filter:blur(6px)}
+.bottomnav.hidden{display:none}
+.navb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;color:var(--silver-d);font-size:10px;letter-spacing:.04em;border-radius:10px}
+.navb .ico{width:22px;height:22px}
+.navb.active{color:var(--gold-l)}.navb.active .ico{filter:drop-shadow(0 0 5px rgba(246,215,139,.7))}
+/* headings / misc */
+.pg-title{font-family:"Cinzel",serif;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--cream);font-size:16px;text-align:center;margin:2px 0 12px;text-shadow:0 1px 3px #000}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--silver);font-family:"Cinzel",serif;font-size:12px;letter-spacing:.08em;margin:0 0 10px;padding:6px 2px}
+.back .ico{width:16px;height:16px}
+.sect-h{display:flex;align-items:center;justify-content:space-between;margin:18px 4px 10px}
+.sect-h h3{font-family:"Cinzel",serif;font-weight:600;letter-spacing:.1em;text-transform:uppercase;font-size:13px;color:var(--silver);margin:0}
+.sect-h .more{font-size:11px;color:var(--gold-l)}
+.hint{font-size:11px;color:var(--silver-d);text-align:center;margin-top:8px;font-style:italic}
+.spacer{height:10px}.spacer.lg{height:22px}
+.tag{display:inline-block;padding:4px 11px;border-radius:16px;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-l);background:rgba(230,178,77,.12);border:1px solid rgba(230,178,77,.35)}
+/* SPLASH */
+#s-splash{justify-content:center;align-items:center;text-align:center}
+.crown{width:52px;margin:0 auto 4px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.7))}
+.title{font-family:"Cinzel Decorative",serif;font-weight:900;font-size:clamp(38px,13vw,58px);letter-spacing:.06em;color:var(--cream);line-height:1;margin:0;text-shadow:0 2px 0 #3a5c8f,0 3px 12px rgba(0,0,0,.8),0 0 26px rgba(120,160,220,.25)}
+.subtitle{font-family:"Cinzel",serif;letter-spacing:.42em;text-transform:uppercase;font-size:11px;color:var(--gold-l);margin:12px 0 0;padding-left:.42em}
+.login-card{width:100%;max-width:340px;margin:32px auto 0;padding:20px 18px}
+.field{margin:0 0 12px}
+.field label{display:block;font-family:"Cinzel",serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--silver-d);margin:0 0 5px}
+.field input{width:100%;padding:12px 13px;border-radius:10px;font-family:"EB Garamond",serif;font-size:15px;color:var(--cream);background:rgba(6,12,26,.7);border:1px solid var(--line-strong);outline:none}
+.field input:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(230,178,77,.2)}
+.login-alt{margin-top:12px;text-align:center;font-size:13px;color:var(--silver-d)}
+.login-alt a{color:var(--gold-l);text-decoration:none;font-weight:600}
+.ember-line{margin-top:22px;color:var(--silver-d);font-size:11px;letter-spacing:.08em}
+/* HOME */
+.hero{position:relative;border-radius:16px;overflow:hidden;padding:18px;min-height:150px;display:flex;flex-direction:column;justify-content:flex-end;
+  background:linear-gradient(180deg,rgba(11,23,48,.2),rgba(8,13,26,.85)),radial-gradient(90% 120% at 70% 10%,#20406f,transparent 60%),linear-gradient(160deg,#15325f,#0a1730);
+  border:1px solid var(--line-strong);box-shadow:var(--shadow)}
+.hero .kicker{font-family:"Cinzel",serif;letter-spacing:.2em;font-size:10px;color:var(--gold-l);text-transform:uppercase}
+.hero h1{font-family:"Cinzel",serif;font-weight:800;font-size:23px;color:var(--cream);margin:4px 0 2px;text-shadow:0 2px 6px #000}
+.hero p{margin:0;color:var(--ink);opacity:.85;font-size:14px}.hero .play{margin-top:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.tile{position:relative;border-radius:14px;padding:15px 13px;min-height:96px;display:flex;flex-direction:column;justify-content:space-between;
+  background:linear-gradient(158deg,var(--panel-1),var(--panel-2) 75%);border:1px solid var(--line-strong);box-shadow:inset 0 0 0 2px rgba(9,16,32,.5),var(--shadow);overflow:hidden}
+.tile .glow{position:absolute;top:-30%;right:-20%;width:120px;height:120px;border-radius:50%;filter:blur(28px);opacity:.4}
+.tile .ico{width:30px;height:30px}
+.tile .nm{font-family:"Cinzel",serif;font-weight:600;font-size:14px;color:var(--cream);letter-spacing:.04em}
+.tile .ds{font-size:12px;color:var(--silver-d);margin-top:2px}
+.tile:active{transform:translateY(2px)}
+.daily{display:flex;align-items:center;gap:12px;padding:13px}
+.daily .box{width:46px;height:46px;border-radius:10px;display:grid;place-items:center;flex:0 0 auto;background:linear-gradient(180deg,#f0c766,#c98a25);box-shadow:0 0 14px rgba(230,178,77,.4)}
+.daily .box .ico{width:26px;height:26px}
+.daily .tx{flex:1}.daily .tx b{font-family:"Cinzel",serif;color:var(--cream);font-size:14px;display:block}.daily .tx span{font-size:12px;color:var(--silver-d)}
+/* MAP */
+.map-wrap{position:relative;width:100%;aspect-ratio:1/1;max-width:400px;margin:6px auto 0}
+.map-line{position:absolute;inset:0;z-index:0}
+.island{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:33%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 40% 30%,#2b4c86,#0a1730);border:2px solid var(--silver-d);box-shadow:inset 0 0 14px rgba(0,0,0,.6),0 0 22px rgba(40,80,150,.4);display:grid;place-items:center;text-align:center;z-index:2}
+.island .t{font-family:"Cinzel",serif;font-size:11px;color:var(--cream);letter-spacing:.06em;line-height:1.1}
+.node{position:absolute;width:31%;aspect-ratio:1;transform:translate(-50%,-50%);z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:50%;text-align:center;background:radial-gradient(circle at 40% 30%,rgba(24,48,90,.9),rgba(8,17,42,.95));border:2px solid var(--el);box-shadow:0 0 18px -2px var(--el),inset 0 0 12px rgba(0,0,0,.6)}
+.node .ico{width:30%;height:30%}.node .nm{font-family:"Cinzel",serif;font-size:11px;color:var(--cream);line-height:1}.node .sub{font-size:9px;color:var(--silver-d)}
+.node:active{transform:translate(-50%,-50%) scale(.96)}
+.node.n-top{top:15%;left:50%}.node.n-right{top:50%;left:85%}.node.n-bottom{top:85%;left:50%}.node.n-left{top:50%;left:15%}
+.wheel-legend{display:flex;justify-content:center;gap:14px;margin-top:16px;flex-wrap:wrap}
+.wl{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--silver)}
+.wl .dot{width:12px;height:12px;border-radius:50%;box-shadow:0 0 6px currentColor}
+/* CHIPS */
+.chips{display:flex;gap:7px;overflow-x:auto;padding:2px 0 6px;margin:0 -2px 8px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;padding:6px 12px;border-radius:20px;font-size:12px;color:var(--silver);background:rgba(10,23,48,.7);border:1px solid var(--line);white-space:nowrap}
+.chip.on{color:#0d1730;background:linear-gradient(180deg,#f0c766,#c98a25);border-color:#f7d78b;font-weight:600}
+/* MINI CARD */
+.cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.mini{position:relative;border-radius:9px;overflow:hidden;aspect-ratio:3/4;padding:6px 5px;display:flex;flex-direction:column;border:1.5px solid var(--rc);background:linear-gradient(160deg,color-mix(in srgb,var(--rc) 30%,#0c1a33),#0a1428);box-shadow:inset 0 0 0 1px rgba(9,16,32,.6),0 4px 10px rgba(0,0,0,.5)}
+.mini:active{transform:scale(.97)}
+.mini .top{display:flex;align-items:center;justify-content:space-between}
+.mini .el{width:16px;height:16px}.mini .stars{font-size:8px;color:var(--gold-l);letter-spacing:-1px}
+.mini .art{flex:1 1 0;min-height:0;margin:4px 0;border-radius:5px;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--el-c) 55%,transparent),transparent 70%),linear-gradient(180deg,#0c1830,#060c1a);border:1px solid rgba(195,204,223,.18);display:grid;place-items:center}
+.mini .art .ico{width:40%;height:40%;opacity:.85}
+.mini .nm{flex:0 0 auto;font-family:"Cinzel",serif;font-size:9px;color:var(--cream);text-align:center;line-height:1.03;min-height:19px;display:flex;align-items:center;justify-content:center;padding:0 1px}
+.mini .stat{flex:0 0 auto;display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--gold-l);padding:0 3px 1px}
+.mini .stat .d{color:var(--silver)}
+.mini.picked{outline:2px solid var(--gold-l);outline-offset:1px}
+/* real card-art variant */
+.mini.imgcard{aspect-ratio:1024/1536;padding:0;border:none;background:transparent;box-shadow:0 3px 10px rgba(0,0,0,.55);overflow:visible;border-radius:8px}
+.mini.imgcard img{width:100%;height:100%;object-fit:cover;border-radius:7px;display:block}
+.mini.imgcard.picked{outline:3px solid var(--gold-l);outline-offset:2px;border-radius:8px}
+.mini.imgcard.dim{opacity:.4;filter:grayscale(.4)}
+.mini.imgcard .badge{top:5px;right:5px}
+.mini .badge{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:var(--gold-l);color:#2a1806;font-size:11px;font-weight:800;display:grid;place-items:center;z-index:3;box-shadow:0 0 8px rgba(0,0,0,.6)}
+.deckbar{position:sticky;bottom:-2px;margin-top:12px;display:flex;align-items:center;justify-content:space-between;padding:12px 14px}
+.deckbar .info{font-size:12px;color:var(--silver)}.deckbar .info b{font-family:"Cinzel",serif;color:var(--cream);display:block;font-size:13px}
+/* MODAL / CARD DETAIL */
+.modal{position:absolute;inset:0;z-index:20;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(4,7,14,.82);backdrop-filter:blur(3px);animation:fade .25s ease both}
+.modal.open{display:flex}
+.bigcard{position:relative;width:min(78%,300px);aspect-ratio:3/4.35;border-radius:16px;padding:10px;display:flex;flex-direction:column;
+  border:2px solid var(--rc);background:linear-gradient(160deg,color-mix(in srgb,var(--rc) 34%,#0c1a33),#0a1428);box-shadow:0 20px 50px rgba(0,0,0,.7),inset 0 0 0 2px rgba(9,16,32,.6)}
+.bigcard .bhdr{text-align:center;font-family:"Cinzel",serif;color:var(--cream);font-weight:600;font-size:14px;padding:2px 0 6px;border-bottom:1px solid var(--line)}
+.bigcard .row{display:flex;align-items:center;justify-content:space-between;padding:6px 2px;font-size:11px;color:var(--silver-d)}
+.bigcard .row .st{color:var(--gold-l);letter-spacing:-1px;font-size:12px}
+.bigcard .bart{flex:1;border-radius:8px;margin:4px 0;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--el-c) 55%,transparent),transparent 70%),linear-gradient(180deg,#0c1830,#060c1a);border:1px solid var(--line);display:grid;place-items:center}
+.bigcard .bart .ico{width:34%;height:34%;opacity:.85}
+.bigcard .spec-l{font-family:"Cinzel",serif;font-size:9px;letter-spacing:.1em;color:var(--silver-d);text-transform:uppercase;margin-top:4px}
+.bigcard .spec{font-size:12.5px;color:var(--cream);line-height:1.35;margin-top:3px;min-height:44px}
+.bigcard .bstat{display:flex;justify-content:space-between;padding-top:6px;border-top:1px solid var(--line);margin-top:4px}
+.bigcard .bstat b{font-size:16px;color:var(--gold-l)}.bigcard .bstat .lb{font-family:"Cinzel",serif;font-size:10px;color:var(--silver-d);letter-spacing:.08em}
+.mclose{position:absolute;top:-14px;right:-6px;width:34px;height:34px;border-radius:50%;background:var(--panel-1);border:1px solid var(--line-strong);display:grid;place-items:center;color:var(--silver);z-index:3}
+.mclose .ico{width:16px;height:16px}
+/* LIST ROWS */
+.row-item{display:flex;align-items:center;gap:12px;padding:12px 13px;margin-bottom:9px}
+.row-item .rk{width:30px;text-align:center;font-family:"Cinzel",serif;font-weight:800;color:var(--gold-l);font-size:15px;flex:0 0 auto}
+.row-item .av{width:38px;height:38px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#2a4a82,#0b1730);border:1.5px solid var(--el,var(--silver-d))}
+.row-item .av .ico{width:19px;height:19px}
+.row-item .mid{flex:1;min-width:0}
+.row-item .mid b{font-family:"Cinzel",serif;color:var(--cream);font-size:13.5px;display:block}
+.row-item .mid span{font-size:11.5px;color:var(--silver-d)}
+.row-item .rt{text-align:right;flex:0 0 auto;font-size:12px}
+.row-item .rt b{font-family:"Cinzel",serif;color:var(--gold-l);display:block;font-size:14px}
+.pill{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;letter-spacing:.04em}
+/* SEGMENTED */
+.seg{display:flex;background:rgba(10,23,48,.6);border:1px solid var(--line);border-radius:12px;padding:4px;margin:0 0 12px}
+.seg button{flex:1;padding:9px;border-radius:9px;font-family:"Cinzel",serif;font-size:11.5px;letter-spacing:.06em;color:var(--silver-d);text-align:center}
+.seg button.on{color:var(--cream);background:linear-gradient(180deg,#22467e,#0e2247);box-shadow:inset 0 1px 0 rgba(230,240,255,.15)}
+/* SHOP PACKS */
+.pack{position:relative;border-radius:15px;overflow:hidden;padding:16px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;
+  border:1.5px solid var(--pc);background:linear-gradient(180deg,color-mix(in srgb,var(--pc) 26%,#0c1a33),#0a1428);box-shadow:var(--shadow)}
+.pack .pglow{position:absolute;top:-40%;left:50%;transform:translateX(-50%);width:150px;height:150px;border-radius:50%;background:var(--pc);filter:blur(38px);opacity:.4}
+.pack .pico{width:56px;height:70px;border-radius:8px;position:relative;z-index:1;display:grid;place-items:center;background:linear-gradient(160deg,color-mix(in srgb,var(--pc) 60%,#12203c),#0a1428);border:1px solid var(--pc);box-shadow:0 6px 16px rgba(0,0,0,.5)}
+.pack .pico .ico{width:34px;height:34px}
+.pack .pn{font-family:"Cinzel",serif;font-weight:600;color:var(--cream);font-size:15px;z-index:1}
+.pack .pd{font-size:11.5px;color:var(--silver-d);z-index:1}
+.pack .price{z-index:1;margin-top:4px}
+/* CAREER PATH */
+.path{position:relative;padding:6px 0}
+.stage{display:flex;align-items:center;gap:13px;padding:11px 12px;margin-bottom:10px;border-radius:14px;position:relative}
+.stage .num{width:40px;height:40px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;font-family:"Cinzel",serif;font-weight:800;font-size:15px;color:var(--cream);background:radial-gradient(circle at 40% 30%,var(--el),#0b1730);border:2px solid var(--el);box-shadow:0 0 16px -3px var(--el)}
+.stage.locked .num{background:rgba(20,32,58,.9);border-color:var(--silver-d);color:var(--silver-d);box-shadow:none}
+.stage .info{flex:1}.stage .info b{font-family:"Cinzel",serif;color:var(--cream);font-size:14px;display:block}.stage .info span{font-size:12px;color:var(--silver-d)}
+.stage .st{flex:0 0 auto}
+/* TOWER */
+.floor{display:flex;align-items:center;gap:12px;padding:11px 13px;margin-bottom:8px}
+.floor .fl{font-family:"Cinzel",serif;font-weight:800;color:var(--gold-l);font-size:15px;width:44px;flex:0 0 auto}
+.floor .info{flex:1}.floor .info b{color:var(--cream);font-family:"Cinzel",serif;font-size:13px;display:block}.floor .info span{font-size:11.5px;color:var(--silver-d)}
+/* PERFIL / STATS */
+.pstat-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.pstat{padding:13px 8px;text-align:center;border-radius:12px;background:linear-gradient(158deg,var(--panel-1),var(--panel-2));border:1px solid var(--line)}
+.pstat b{display:block;font-family:"Cinzel",serif;font-size:20px;color:var(--gold-l)}
+.pstat span{font-size:10.5px;color:var(--silver-d);letter-spacing:.04em}
+.badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.badge2{width:52px;text-align:center}
+.badge2 .b{width:52px;height:52px;border-radius:12px;display:grid;place-items:center;background:radial-gradient(circle at 40% 30%,var(--el,#2a4a82),#0b1730);border:1.5px solid var(--el,var(--silver-d));box-shadow:0 0 12px -3px var(--el,transparent)}
+.badge2 .b .ico{width:26px;height:26px}
+.badge2 span{font-size:9px;color:var(--silver-d);display:block;margin-top:3px;line-height:1.1}
+/* TOGGLE */
+.opt{display:flex;align-items:center;justify-content:space-between;padding:13px;margin-bottom:9px}
+.opt .lb{font-size:14px;color:var(--cream)}.opt .lb span{display:block;font-size:11px;color:var(--silver-d)}
+.tgl{width:46px;height:26px;border-radius:20px;background:rgba(10,23,48,.9);border:1px solid var(--line-strong);position:relative;flex:0 0 auto;transition:background .2s}
+.tgl.on{background:linear-gradient(180deg,#f0c766,#c98a25)}
+.tgl i{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--silver-l);transition:left .2s}
+.tgl.on i{left:22px}
+/* DUEL */
+.duel-side{display:flex;align-items:center;gap:10px;padding:11px 13px}
+.vida{flex:1}.vida .lab{display:flex;justify-content:space-between;font-size:11px;color:var(--silver-d);margin-bottom:4px}.vida .lab b{color:var(--cream);font-family:"Cinzel",serif}
+.bar{height:11px;border-radius:6px;background:rgba(6,12,26,.8);border:1px solid var(--line);overflow:hidden}
+.bar span{display:block;height:100%;border-radius:5px;transition:width .5s}
+.bar.foe span{background:linear-gradient(90deg,#e0533c,#a01f3c)}.bar.you span{background:linear-gradient(90deg,#5ad07a,#2a8a52)}
+.rounds{display:flex;justify-content:center;gap:8px;margin:12px 0}
+.rd{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-family:"Cinzel",serif;font-size:13px;color:var(--silver-d);background:rgba(10,23,48,.6);border:1px solid var(--line)}
+.rd.now{color:var(--gold-l);border-color:var(--gold);box-shadow:0 0 12px rgba(230,178,77,.35)}
+.rd.done{color:var(--ok);border-color:rgba(90,208,122,.5)}
+.arena{position:relative;border-radius:14px;min-height:160px;margin:4px 0;display:flex;align-items:center;justify-content:center;gap:14px;padding:14px;
+  background:radial-gradient(80% 90% at 50% 50%,rgba(40,80,150,.25),transparent 70%),linear-gradient(180deg,#0c1a35,#070d1c);border:1px solid var(--line-strong)}
+.slot{width:78px;aspect-ratio:3/4;border-radius:10px;border:1.5px dashed var(--line-strong);display:grid;place-items:center;color:var(--silver-d);font-size:10px;text-align:center;background:rgba(8,14,30,.5)}
+.slot.foe{border-color:rgba(224,83,60,.5)}.slot.you{border-color:rgba(90,208,122,.5)}
+.slot .mini{width:100%;height:100%;aspect-ratio:auto}
+.vs{font-family:"Cinzel Decorative",serif;color:var(--gold-l);font-size:19px;text-shadow:0 0 10px rgba(230,178,77,.4)}
+.duel-msg{text-align:center;font-family:"Cinzel",serif;color:var(--gold-l);font-size:13px;letter-spacing:.04em;margin:8px 0 6px;min-height:18px}
+.duel-msg b{color:var(--cream)}
+.turn-timer{position:relative;height:8px;border-radius:5px;background:rgba(195,204,223,.16);margin:2px 8px 20px;opacity:0;transition:opacity .25s}
+.turn-timer.on{opacity:1}
+.turn-timer i{position:absolute;inset:0;background:linear-gradient(90deg,var(--gold),var(--gold-l));border-radius:5px;transform-origin:left;box-shadow:0 0 12px rgba(230,178,77,.55)}
+.turn-timer.low i{background:linear-gradient(90deg,#e0533c,#ff8a6a);box-shadow:0 0 12px rgba(224,83,60,.6)}
+.turn-timer b{position:absolute;right:0;top:-19px;font-family:"Cinzel",serif;font-size:13px;font-weight:700;color:var(--gold-l)}
+.turn-timer.low b{color:var(--danger)}
+.slot.lit{border-style:solid;background:rgba(230,178,77,.06)}
+.arena.clash .slot.foe{animation:bumpR .5s ease}.arena.clash .slot.you{animation:bumpL .5s ease}
+@keyframes bumpR{0%,100%{transform:translateX(0)}45%{transform:translateX(11px)}}
+@keyframes bumpL{0%,100%{transform:translateX(0)}45%{transform:translateX(-11px)}}
+.coin{width:58px;height:58px;border-radius:50%;margin:0 auto 14px;background:radial-gradient(circle at 38% 34%,#f7d78b,#e6b24d 55%,#a9781f);box-shadow:0 0 26px rgba(230,178,77,.6),inset 0 -6px 10px rgba(0,0,0,.35);animation:flip 1.15s ease-in-out infinite}
+@keyframes flip{0%{transform:rotateY(0)}100%{transform:rotateY(360deg)}}
+.hand{display:flex;gap:7px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.hand .mini{width:62px}
+.hand .mini.dim{opacity:.35;filter:grayscale(.5);pointer-events:none}
+.result-ov{position:absolute;inset:0;z-index:15;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:rgba(4,7,14,.85);backdrop-filter:blur(3px);border-radius:14px}
+.result-ov.show{display:flex}
+.result-ov .rt{font-family:"Cinzel Decorative",serif;font-size:34px}
+.wip{text-align:center;padding:22px 18px}
+.wip .ico{width:44px;height:44px;margin:0 auto 12px;opacity:.7}
+.wip h3{font-family:"Cinzel",serif;color:var(--cream);letter-spacing:.06em;margin:0 0 8px;font-size:17px}
+.wip p{color:var(--silver-d);font-size:13.5px;line-height:1.5;margin:0 auto;max-width:280px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="appbg"></div>
+  <canvas id="embers"></canvas>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+    <symbol id="i-crown" viewBox="0 0 24 24"><path fill="currentColor" d="M3 8l4 4 5-7 5 7 4-4-1.5 10.5h-15L3 8z"/></symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2c1 3-2 4-2 7 0 1.5 1 2.5 1 2.5S9 12 8 10c-2 2-3 4-3 6a7 7 0 0014 0c0-4-4-6-4-9 0-2-2-4-3-5z"/></symbol>
+    <symbol id="i-drop" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C8 8 5 11 5 15a7 7 0 0014 0c0-4-3-7-7-13z"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path fill="currentColor" d="M4 20C3 12 8 4 20 4c0 12-8 17-16 16 1-5 4-8 8-10-5 1-7 4-8 10z"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path fill="currentColor" d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></symbol>
+    <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="currentColor"/><circle cx="12" cy="12" r="6" fill="none" stroke="#7d5a1e" stroke-width="1.2"/></symbol>
+    <symbol id="i-gem" viewBox="0 0 24 24"><path fill="currentColor" d="M6 3h12l4 6-10 12L2 9l4-6z" opacity=".9"/><path fill="rgba(255,255,255,.35)" d="M6 3h12l-6 6-6-6z"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2l3 6.5 7 .8-5.2 4.7 1.5 6.9L12 17l-6.3 3.9 1.5-6.9L2 9.3l7-.8L12 2z"/></symbol>
+    <symbol id="i-sword" viewBox="0 0 24 24"><path fill="currentColor" d="M14 3l7 1-9 9-2-2 4-8zM3 17l6-6 2 2-6 6-3 1 1-3z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5l8-3z"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path fill="currentColor" d="M6 3h12v3a4 4 0 01-4 4h-4A4 4 0 016 6V3zM3 5h3v2a3 3 0 01-3-3zm18 0a3 3 0 01-3 3V5h3zM10 12h4v4h2v3H8v-3h2v-4z"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path fill="currentColor" d="M8 11a3 3 0 100-6 3 3 0 000 6zm8 0a3 3 0 100-6 3 3 0 000 6zM2 19c0-3 3-5 6-5s6 2 6 5v1H2v-1zm13-4c2.5.3 5 2 5 5v1h-4v-1c0-2-1-3.7-1-5z"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><path fill="currentColor" d="M9 3L3 5v16l6-2 6 2 6-2V3l-6 2-6-2zm0 2.5l6 2v11l-6-2v-11z"/></symbol>
+    <symbol id="i-cards" viewBox="0 0 24 24"><rect x="3" y="6" width="12" height="15" rx="2" fill="currentColor" transform="rotate(-8 9 13)"/><rect x="9" y="4" width="12" height="15" rx="2" fill="currentColor" opacity=".85"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3l9 8h-3v9h-4v-6h-4v6H6v-9H3l9-8z"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M7 4l13 8-13 8V4z"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><path fill="currentColor" d="M12 8a4 4 0 100 8 4 4 0 000-8zm9 4l-2-1 .5-2.3-2-1.2-1.7 1.5-2.3-.5L12 6l-1.2 2-2.3.5L6.8 7 4.8 8.2 5.3 10.5 3.5 12l1.8 1.5-.5 2.3 2 1.2 1.7-1.5 2.3.5L12 20l1.2-2 2.3-.5 1.7 1.5 2-1.2-.5-2.3L21 12z"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 21V4h11l-2 4 2 4H5"/></symbol>
+    <symbol id="i-tower" viewBox="0 0 24 24"><path fill="currentColor" d="M6 8h12v13H6V8zm-1-5h2v2h2V3h2v2h2V3h2v2h2v3H5V3z"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4 10-11"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><path fill="currentColor" d="M6 10V7a6 6 0 0112 0v3h1v11H5V10h1zm2 0h8V7a4 4 0 00-8 0v3z"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12a4 4 0 100-8 4 4 0 000 8zm0 2c-4 0-8 2-8 6v0h16v0c0-4-4-6-8-6z"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h8v16H6a2 2 0 01-2-2V4zm16 0v14a2 2 0 01-2 2h-6V4h8z"/></symbol>
+  </defs></svg>
+
+  <header class="topbar hidden" id="topbar">
+    <button class="crest" onclick="go('perfil')"><svg class="ico" style="width:20px;height:20px;color:var(--gold-l)"><use href="#i-flame"/></svg></button>
+    <div class="who"><div class="nm">Gladiador</div><div class="rk">Bronze III · Nível 1</div></div>
+    <div class="res"><svg class="ico" style="color:var(--gold-l)"><use href="#i-coin"/></svg><span id="ouro">250</span></div>
+    <div class="res"><svg class="ico" style="color:#9fd0ff"><use href="#i-gem"/></svg><span id="ess">12</span></div>
+    <button class="gearbtn" onclick="go('config')"><svg class="ico" style="color:var(--silver)"><use href="#i-gear"/></svg></button>
+  </header>
+
+  <!-- SPLASH -->
+  <section class="screen active" id="s-splash">
+    <div class="bg" style="background:radial-gradient(80% 60% at 50% 30%,rgba(40,80,150,.35),transparent 60%),radial-gradient(90% 60% at 50% 110%,rgba(236,106,32,.22),transparent 60%)"></div>
+    <div><svg class="crown" viewBox="0 0 24 24" style="color:var(--gold-l)"><use href="#i-crown"/></svg>
+      <h1 class="title">VALDÓRIA</h1><div class="subtitle">Arena de Gladiadores</div></div>
+    <div class="panel pad login-card">
+      <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+      <div class="field"><label>E-mail</label><input id="authEmail" type="email" autocomplete="email" placeholder="voce@email.com"></div>
+      <div class="field"><label>Senha</label><input id="authPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+      <div id="authMsg" style="min-height:16px;font-size:12px;text-align:center;margin:1px 0 8px;color:var(--danger);font-family:'Cinzel',serif"></div>
+      <button class="btn gold big block" onclick="doLogin()"><svg class="ico"><use href="#i-play"/></svg> Entrar na Arena</button>
+      <div class="login-alt">Novo por aqui? <a onclick="doSignup()">Criar conta</a></div>
+      <div class="rule"></div>
+      <button class="btn ghost block" onclick="playGuest()">Entrar como convidado</button>
+    </div>
+    <div class="ember-line">✦ Forje seu gladiador · Domine os 4 elementos ✦</div>
+  </section>
+
+  <!-- HOME -->
+  <section class="screen has-top has-nav" id="s-home">
+    <div class="hero"><div class="kicker">Ilha de Batalha</div><h1>Bem-vindo, Gladiador</h1><p>Sua próxima vitória aguarda na arena.</p>
+      <button class="btn gold big play" onclick="startDuel()"><svg class="ico"><use href="#i-sword"/></svg> Duelar agora</button></div>
+    <div class="sect-h"><h3>Modos de Jogo</h3></div>
+    <div class="grid2">
+      <button class="tile" onclick="startDuel()"><div class="glow" style="background:var(--rara)"></div><svg class="ico" style="color:#9fd0ff"><use href="#i-sword"/></svg><div><div class="nm">PvP Ranqueado</div><div class="ds">Suba no ranking</div></div></button>
+      <button class="tile" onclick="go('carreira')"><div class="glow" style="background:var(--fogo)"></div><svg class="ico" style="color:var(--gold-l)"><use href="#i-flag"/></svg><div><div class="nm">Carreira</div><div class="ds">4 continentes</div></div></button>
+      <button class="tile" onclick="go('torre')"><div class="glow" style="background:var(--epica)"></div><svg class="ico" style="color:#caa0ff"><use href="#i-tower"/></svg><div><div class="nm">Torre Infinita</div><div class="ds">Suba andares</div></div></button>
+      <button class="tile" onclick="go('collection')"><div class="glow" style="background:var(--natureza)"></div><svg class="ico" style="color:#8fe0a0"><use href="#i-cards"/></svg><div><div class="nm">Coleção</div><div class="ds">52 cartas · Deck</div></div></button>
+      <button class="tile" onclick="go('shop')"><div class="glow" style="background:var(--gold)"></div><svg class="ico" style="color:var(--gold-l)"><use href="#i-coin"/></svg><div><div class="nm">Loja</div><div class="ds">Abra packs</div></div></button>
+      <button class="tile" onclick="go('clan')"><div class="glow" style="background:var(--agua)"></div><svg class="ico" style="color:#8fd8f0"><use href="#i-users"/></svg><div><div class="nm">Clã</div><div class="ds">Junte-se</div></div></button>
+    </div>
+    <div class="sect-h"><h3>Recompensa Diária</h3></div>
+    <div class="panel daily"><span class="corner tl"></span><span class="corner br"></span>
+      <div class="box"><svg class="ico" style="color:#2a1806"><use href="#i-coin"/></svg></div>
+      <div class="tx"><b>+50 de Ouro</b><span>Volte amanhã para mais</span></div>
+      <button class="btn gold sm" onclick="claimDaily(this)">Coletar</button></div>
+    <div class="spacer lg"></div>
+  </section>
+
+  <!-- MAP -->
+  <section class="screen has-top has-nav" id="s-map">
+    <div class="pg-title">Arquipélago de Valdória</div>
+    <div class="map-wrap">
+      <svg class="map-line" viewBox="0 0 100 100" preserveAspectRatio="none"><g stroke="rgba(195,204,223,.3)" stroke-width=".6" stroke-dasharray="2 2" fill="none">
+        <line x1="50" y1="30" x2="50" y2="15"/><line x1="70" y1="50" x2="85" y2="50"/><line x1="50" y1="70" x2="50" y2="85"/><line x1="30" y1="50" x2="15" y2="50"/></g></svg>
+      <button class="node n-top" style="--el:var(--fogo)" onclick="go('carreira')"><svg class="ico" style="color:var(--fogo)"><use href="#i-flame"/></svg><div class="nm">Chamalar</div><div class="sub">Fogo · 13</div></button>
+      <button class="node n-right" style="--el:var(--raio)" onclick="go('carreira')"><svg class="ico" style="color:var(--raio)"><use href="#i-bolt"/></svg><div class="nm">Tormenália</div><div class="sub">Raio · 13</div></button>
+      <button class="node n-bottom" style="--el:var(--agua)" onclick="go('carreira')"><svg class="ico" style="color:var(--agua)"><use href="#i-drop"/></svg><div class="nm">Nereida</div><div class="sub">Água · 13</div></button>
+      <button class="node n-left" style="--el:var(--natureza)" onclick="go('carreira')"><svg class="ico" style="color:var(--natureza)"><use href="#i-leaf"/></svg><div class="nm">Selvaria</div><div class="sub">Natureza · 13</div></button>
+      <div class="island"><div class="t">Ilha de<br>Batalha</div></div>
+    </div>
+    <div class="wheel-legend">
+      <div class="wl"><span class="dot" style="color:var(--agua)"></span>Água › Fogo</div><div class="wl"><span class="dot" style="color:var(--fogo)"></span>Fogo › Natureza</div>
+      <div class="wl"><span class="dot" style="color:var(--natureza)"></span>Natureza › Raio</div><div class="wl"><span class="dot" style="color:var(--raio)"></span>Raio › Água</div></div>
+    <p class="hint">Cada elemento vence um e perde para outro — monte sua mão pensando na roda.</p>
+  </section>
+
+  <!-- COLEÇÃO -->
+  <section class="screen has-top has-nav" id="s-collection">
+    <div class="pg-title">Coleção — 52 Cartas</div>
+    <div class="chips" id="colChips"></div>
+    <div class="cards-grid" id="cardsGrid"></div>
+    <div class="panel deckbar"><span class="corner tl"></span><span class="corner br"></span>
+      <div class="info"><b>Meu Deck</b>8 cartas · máx. 20★</div>
+      <button class="btn gold sm" onclick="go('deck')"><svg class="ico"><use href="#i-cards"/></svg> Montar Deck</button></div>
+    <div class="spacer"></div>
+  </section>
+
+  <!-- DECK BUILDER -->
+  <section class="screen has-top" id="s-deck">
+    <a class="back" onclick="go('collection')"><svg class="ico"><use href="#i-back"/></svg> Coleção</a>
+    <div class="pg-title">Montar Deck</div>
+    <div class="panel pad" id="deckStatus" style="margin-bottom:12px;text-align:center"></div>
+    <div class="cards-grid" id="deckGrid"></div>
+    <div class="panel deckbar"><span class="corner tl"></span><span class="corner br"></span>
+      <div class="info"><b id="deckCount">0/8 cartas</b><span id="deckStars">0/20 ★</span></div>
+      <button class="btn gold sm" id="deckSave" onclick="saveDeck()"><svg class="ico"><use href="#i-check"/></svg> Salvar</button></div>
+    <div class="spacer"></div>
+  </section>
+
+  <!-- DUELO -->
+  <section class="screen has-top" id="s-duel">
+    <a class="back" onclick="go('home')"><svg class="ico"><use href="#i-back"/></svg> Sair do duelo</a>
+    <div class="pg-title">Duelo</div>
+    <div class="panel duel-side"><div class="crest" style="width:34px;height:34px;border-color:var(--danger)"><svg class="ico" style="width:17px;height:17px;color:var(--danger)"><use href="#i-shield"/></svg></div>
+      <div class="vida"><div class="lab"><b>Adversário</b><span id="foeHp">15 / 15</span></div><div class="bar foe"><span id="foeBar" style="width:100%"></span></div></div></div>
+    <div class="rounds" id="roundTrack"></div>
+    <div class="turn-timer" id="turnTimer"><i id="turnFill"></i><b id="turnSecs">10</b></div>
+    <div style="position:relative">
+      <div class="arena"><div class="slot foe" id="slotFoe">Carta do<br>adversário</div><div class="vs">VS</div><div class="slot you" id="slotYou">Sua<br>carta</div></div>
+      <div class="result-ov" id="resultOv"></div>
+    </div>
+    <div class="duel-msg" id="duelMsg"></div>
+    <div class="panel duel-side" style="margin-top:2px"><div class="crest" style="width:34px;height:34px;border-color:var(--ok)"><svg class="ico" style="width:17px;height:17px;color:var(--ok)"><use href="#i-flame"/></svg></div>
+      <div class="vida"><div class="lab"><b>Você</b><span id="youHp">15 / 15</span></div><div class="bar you"><span id="youBar" style="width:100%"></span></div></div></div>
+    <div class="sect-h"><h3>Sua Mão</h3><span class="more" id="handLbl"></span></div>
+    <div class="hand" id="duelHand"></div>
+    <div class="spacer"></div>
+  </section>
+
+  <!-- LOJA -->
+  <section class="screen has-top has-nav" id="s-shop">
+    <div class="pg-title">Loja</div>
+    <div class="seg" id="shopSeg"><button class="on" onclick="shopTab('packs',this)">Packs</button><button onclick="shopTab('craft',this)">Essência</button></div>
+    <div id="shopPacks"><div class="grid2" id="packGrid"></div>
+      <p class="hint">Ouro é ganho jogando. Duplicatas viram Essência para craftar cartas específicas.</p></div>
+    <div id="shopCraft" style="display:none">
+      <div class="panel pad" style="text-align:center"><span class="corner tl"></span><span class="corner br"></span>
+        <div class="pstat-grid" style="grid-template-columns:1fr 1fr"><div class="pstat"><b id="essTotal">12</b><span>Essência</span></div><div class="pstat"><b>0</b><span>Craftadas</span></div></div></div>
+      <div class="sect-h"><h3>Craftar por raridade</h3></div>
+      <div id="craftGrid"></div>
+    </div>
+    <div class="spacer"></div>
+  </section>
+
+  <!-- ABERTURA DE PACK -->
+  <section class="screen has-top" id="s-pack">
+    <div class="pg-title" id="packTitle">Abrindo Pack</div>
+    <p class="hint" style="margin-top:0">Toque nas cartas para revelar</p>
+    <div class="cards-grid" id="packReveal" style="margin-top:14px"></div>
+    <div class="spacer lg"></div>
+    <button class="btn gold block" onclick="go('shop')"><svg class="ico"><use href="#i-check"/></svg> Continuar</button>
+    <div class="spacer"></div>
+  </section>
+
+  <!-- CARREIRA -->
+  <section class="screen has-top has-nav" id="s-carreira">
+    <div class="pg-title">Carreira</div>
+    <div class="seg" id="carSeg"></div>
+    <div class="path" id="carPath"></div>
+    <div class="spacer"></div>
+  </section>
+
+  <!-- TORRE -->
+  <section class="screen has-top has-nav" id="s-torre">
+    <div class="pg-title">Torre Infinita</div>
+    <div class="panel pad" style="text-align:center;margin-bottom:12px"><span class="corner tl"></span><span class="corner br"></span>
+      <div class="tag">Andar Atual</div><div style="font-family:'Cinzel Decorative',serif;font-size:44px;color:var(--gold-l);line-height:1;margin:8px 0 2px">7</div>
+      <div style="font-size:12px;color:var(--silver-d)">Recorde: andar 12 · Recompensa acumula a cada 5 andares</div>
+      <button class="btn gold block" style="margin-top:14px" onclick="startDuel()"><svg class="ico"><use href="#i-sword"/></svg> Enfrentar andar 7</button></div>
+    <div class="sect-h"><h3>Próximos andares</h3></div>
+    <div id="towerList"></div>
+    <div class="spacer"></div>
+  </section>
+
+  <!-- RANKING -->
+  <section class="screen has-top has-nav" id="s-ranking">
+    <div class="pg-title">Ranking</div>
+    <div class="panel row-item" style="margin-bottom:14px;border-color:var(--gold)"><span class="corner tl"></span><span class="corner br"></span>
+      <div class="rk" style="color:var(--silver)">#238</div><div class="av"><svg class="ico" style="color:var(--gold-l)"><use href="#i-flame"/></svg></div>
+      <div class="mid"><b>Você (Gladiador)</b><span>Bronze III · 1.020 pts</span></div><div class="rt"><b>+0</b><span style="color:var(--silver-d)">hoje</span></div></div>
+    <div class="sect-h"><h3>Top Gladiadores</h3></div>
+    <div id="rankList"></div>
+    <div class="spacer"></div>
+  </section>
+
+  <!-- CLÃ -->
+  <section class="screen has-top has-nav" id="s-clan">
+    <div class="pg-title">Clã</div>
+    <div class="panel pad" style="margin-bottom:12px"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+      <div style="display:flex;align-items:center;gap:13px">
+        <div class="crest" style="width:52px;height:52px;border-color:var(--gold)"><svg class="ico" style="width:26px;height:26px;color:var(--gold-l)"><use href="#i-shield"/></svg></div>
+        <div style="flex:1"><div style="font-family:'Cinzel',serif;color:var(--cream);font-size:17px">Chama Eterna</div><div style="font-size:12px;color:var(--silver-d)">Nível 4 · 18/30 membros · #12 no ranking</div></div></div>
+      <div class="rule"></div>
+      <div style="display:flex;align-items:center;gap:10px"><div style="flex:1"><div style="font-size:12px;color:var(--silver-d)">Guerra de Clã em andamento</div><div class="bar" style="margin-top:5px"><span style="width:64%;background:linear-gradient(90deg,#f0c766,#c98a25)"></span></div></div>
+        <button class="btn gold sm">Contribuir</button></div></div>
+    <div class="sect-h"><h3>Membros</h3><span class="more">18</span></div>
+    <div id="clanList"></div>
+    <div class="spacer"></div>
+  </section>
+
+  <!-- PERFIL -->
+  <section class="screen has-top has-nav" id="s-perfil">
+    <div class="panel pad" style="text-align:center;margin-bottom:14px"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+      <div class="crest" style="width:74px;height:74px;margin:0 auto 8px;border-color:var(--gold)"><svg class="ico" style="width:38px;height:38px;color:var(--gold-l)"><use href="#i-flame"/></svg></div>
+      <div style="font-family:'Cinzel',serif;font-size:20px;color:var(--cream)">Gladiador</div>
+      <div style="font-size:12px;color:var(--silver-d)">Bronze III · Nível 1 · Chamalar</div></div>
+    <div class="pstat-grid"><div class="pstat"><b>14</b><span>Vitórias</span></div><div class="pstat"><b>58%</b><span>Winrate</span></div><div class="pstat"><b>29</b><span>Cartas</span></div></div>
+    <div class="sect-h"><h3>Conquistas</h3></div>
+    <div class="badges" id="badges"></div>
+    <div class="sect-h"><h3>Últimos duelos</h3></div>
+    <div id="history"></div>
+    <div class="spacer"></div>
+  </section>
+
+  <!-- CONFIG -->
+  <section class="screen has-top" id="s-config">
+    <a class="back" onclick="go('home')"><svg class="ico"><use href="#i-back"/></svg> Voltar</a>
+    <div class="pg-title">Configurações</div>
+    <div class="sect-h"><h3>Áudio</h3></div>
+    <div class="panel opt"><div class="lb">Música<span>Trilha da arena</span></div><div class="tgl on" onclick="this.classList.toggle('on')"><i></i></div></div>
+    <div class="panel opt"><div class="lb">Efeitos sonoros<span>Cliques e batalhas</span></div><div class="tgl on" onclick="this.classList.toggle('on')"><i></i></div></div>
+    <div class="panel opt"><div class="lb">Vibração<span>Feedback tátil</span></div><div class="tgl on" onclick="this.classList.toggle('on')"><i></i></div></div>
+    <div class="sect-h"><h3>Jogo</h3></div>
+    <div class="panel opt"><div class="lb">Idioma<span>Português (Brasil)</span></div><span style="color:var(--gold-l);font-size:12px">Alterar</span></div>
+    <div class="panel opt"><div class="lb">Animações reduzidas<span>Menos efeitos</span></div><div class="tgl" onclick="this.classList.toggle('on')"><i></i></div></div>
+    <div class="sect-h"><h3>Conta</h3></div>
+    <div class="panel opt"><div class="lb">Gladiador<span>convidado@valdoria</span></div><span style="color:var(--gold-l);font-size:12px">Gerenciar</span></div>
+    <button class="btn danger block" style="margin-top:14px" onclick="doLogout()">Sair da conta</button>
+    <p class="hint">Valdória v0.2 · Arena de Gladiadores · feito com ❤ e brasas</p>
+    <div class="spacer"></div>
+  </section>
+
+  <!-- MODAL CARD DETAIL -->
+  <div class="modal" id="cardModal" onclick="if(event.target===this)closeCard()"><div id="cardModalBody"></div></div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottomnav hidden" id="bottomnav">
+    <button class="navb" data-scr="home" onclick="go('home')"><svg class="ico"><use href="#i-home"/></svg>Início</button>
+    <button class="navb" data-scr="map" onclick="go('map')"><svg class="ico"><use href="#i-map"/></svg>Mapa</button>
+    <button class="navb" data-scr="collection" onclick="go('collection')"><svg class="ico"><use href="#i-cards"/></svg>Cartas</button>
+    <button class="navb" data-scr="shop" onclick="go('shop')"><svg class="ico"><use href="#i-coin"/></svg>Loja</button>
+    <button class="navb" data-scr="ranking" onclick="go('ranking')"><svg class="ico"><use href="#i-trophy"/></svg>Ranking</button>
+  </nav>
+</div>
+
+<script src="supabase.js"></script>
+<script src="imgdata.js"></script>
+<script src="bgdata.js"></script>
+<script>
+/* ============ DADOS ============ */
+const EL={fogo:{i:'i-flame',c:'var(--fogo)',nm:'Fogo'},agua:{i:'i-drop',c:'var(--agua)',nm:'Água'},nat:{i:'i-leaf',c:'var(--natureza)',nm:'Natureza'},raio:{i:'i-bolt',c:'var(--raio)',nm:'Raio'}};
+const RAR={comum:'var(--comum)',incomum:'var(--incomum)',rara:'var(--rara)',epica:'var(--epica)'};
+const RARN={comum:'Comum',incomum:'Incomum',rara:'Rara',epica:'Épica'};
+const BEATS={agua:'fogo',fogo:'nat',nat:'raio',raio:'agua'}; // vantagem elemental
+// [nome, el, rar, ★, ATK, DEF, especial]
+const CARDS=[
+['Recruta da Forja','fogo','comum',1,2,1,'"Só marreta e teimosia."'],['Cão de Brasa','fogo','comum',2,4,2,'"Late fogo e corre atrás do próprio rabo."'],['Escudeiro de Cobre','fogo','comum',1,1,3,'"Segura esse escudo o dia inteiro."'],['Faísca Travessa','fogo','comum',1,2,1,'"Solta faísca e foge rindo."'],['Lanceiro Flamejante','fogo','comum',2,3,2,'"A lança pega fogo, o talento ficou na forja."'],['Sacerdote das Brasas','fogo','comum',2,2,2,'"Reza pras brasas. Ninguém respondeu."'],
+['Gladiadora Ember','fogo','incomum',2,3,2,'Sede de arena — ao atacar, +2 ATK se o oponente tiver 10 ou menos de Vida.'],['Berserker Cinzas','fogo','incomum',2,3,2,'Fúria cega — ao atacar, +3 ATK, mas você perde 1 de Vida.'],['Salamandra de Guerra','fogo','incomum',3,4,3,'Pele de lava — ao defender, +2 DEFESA.'],['Piromante Vingativa','fogo','incomum',3,3,3,'Chama vingativa — se você perder Vida neste confronto, o oponente também perde 1.'],
+['Ignarok, o Incandescente','fogo','rara',3,4,3,'Investida ígnea — ao atacar, ignora 2 de DEFESA do inimigo.'],['Fênix de Chamalar','fogo','rara',4,4,4,'Renascer — ao vencer o confronto, você recupera 3 de Vida.'],
+['Vulkanor, Senhor das Forjas','fogo','epica',4,5,4,'Ira do Vulcão — ao atacar, ignora TODA a DEFESA do inimigo.'],
+['Grumete das Marés','agua','comum',1,1,2,'"Ainda tá aprendendo a dar nó."'],['Caranguejo Couraçado','agua','comum',2,2,4,'"Anda de lado e não larga a casca."'],['Sereia Cantora','agua','comum',2,2,2,'"Canta bonito, encanta marujo."'],['Baiacu Explosivo','agua','comum',1,2,1,'"Incha, faz cara feia e... só isso."'],['Pescador Teimoso','agua','comum',2,3,2,'"Jura que um dia fisga algo especial. Hoje não."'],['Golfinho Batedor','agua','comum',1,2,1,'"Poder especial? Só o carisma."'],
+['Sanguessuga Abissal','agua','incomum',2,3,2,'Vampirismo — se causar dano ao atacar, você recupera 1 de Vida.'],['Corsária das Brumas','agua','incomum',3,4,2,'Névoa — ao defender, o atacante não recebe bônus elemental neste confronto.'],['Curandeira da Maré','agua','incomum',3,2,4,'Bênção das águas — ao fim do confronto, você recupera 1 de Vida.'],['Guardiã do Recife','agua','incomum',3,2,5,'Barreira de coral — ao defender, +3 DEFESA.'],
+['Almirante Neritide','agua','rara',4,4,4,'Contra-maré — ao defender, se o ataque falhar, você recupera 2 de Vida.'],['Leviatã das Profundezas','agua','rara',4,5,3,'Esmagar — ao atacar, ignora 3 de DEFESA do inimigo.'],
+['Thalassa, Rainha das Marés','agua','epica',4,4,5,'Maré Suprema — ao defender, +2 DEFESA; se o ataque falhar, +3 de Vida.'],
+['Broto Voraz','nat','comum',1,1,2,'"Especial? Quem sabe quando crescer."'],['Filhote de Lobo','nat','comum',1,2,1,'"Morde o próprio rabo e dorme."'],['Casca-Grossa','nat','comum',2,2,4,'"Dura como tronco, lenta como tronco."'],['Espinho Saltitante','nat','comum',1,1,2,'"Espeta quem chega perto sem querer."'],['Druida Aprendiz','nat','comum',2,2,2,'"Ainda decorando o primeiro feitiço."'],['Javali Furioso','nat','comum',2,4,1,'"Corre reto e grita. Estratégia? Não."'],
+['Alcateia Unida','nat','incomum',2,2,2,'Matilha — +1 ATK para cada outra carta de Natureza na sua mão.'],['Guardião do Arco-Íris','nat','incomum',3,3,3,'Biodiversidade — 3+ elementos na mão: +2 ATK e +2 DEFESA.'],['Urso Espírito','nat','incomum',3,4,3,'Fúria selvagem — +1 ATK ao atacar e +1 DEFESA ao defender.'],['Ent Ancião','nat','incomum',3,3,4,'Raízes — ao defender, +3 DEFESA.'],
+['Colosso de Carvalho','nat','rara',3,3,4,'Casca imortal — ao defender, se o ataque falhar, o recuo é dobrado.'],['Matriarca da Floresta','nat','rara',4,3,5,'Elo da matilha — +1 ATK e +1 DEFESA por carta de Natureza na sua mão.'],
+['Gaia, a Mãe-Bosque','nat','epica',4,4,4,'Despertar da Selva — na mão, suas cartas de Natureza têm +1/+1.'],
+['Fagulha Elétrica','raio','comum',1,2,1,'"Solta um tique de choque e se acha."'],['Vaga-lume Estático','raio','comum',1,1,2,'"Pisca bonito. Poder de batalha, nenhum."'],['Sentinela de Cobre','raio','comum',2,2,3,'"Fica parado conduzindo faísca."'],['Duende Faísca','raio','comum',1,2,1,'"Curto-circuito por diversão. Útil? Nunca."'],['Arqueiro do Pico','raio','comum',2,3,2,'"Mira, atira, erra às vezes."'],['Corredor do Vento','raio','comum',2,3,1,'"Corre rápido, pensa devagar."'],
+['Águia Trovejante','raio','incomum',2,3,2,'Ataque relâmpago — ao atacar, ignora 1 de DEFESA do inimigo.'],['Condutor Temerário','raio','incomum',2,4,1,'Sobrecarga — ao atacar, +3 ATK; se falhar, você perde 1 de Vida extra.'],['Cavaleira do Trovão','raio','incomum',3,4,2,'Ímpeto do trovão — ao atacar, se vencer, o oponente perde +1 de Vida.'],['Xamã das Tempestades','raio','incomum',3,3,3,'Corrente — ao atacar com vantagem elemental, o bônus é +4.'],
+['Senhor dos Ventos','raio','rara',3,3,3,'Reflexos do raio — ao defender, reduz em 2 o dano sofrido.'],['Tempestade Viva','raio','rara',4,4,4,'Descarga — ao atacar, +2 ATK e ignora 2 de DEFESA do inimigo.'],
+['Zephyros, Fúria do Céu','raio','epica',4,5,3,'Julgamento Relâmpago — ao atacar, +3 ATK e nunca sofre recuo.'],
+];
+const C=(a)=>({nm:a[0],el:a[1],rar:a[2],st:a[3],atk:a[4],def:a[5],sp:a[6]});
+const DECKI=CARDS.map(C);
+
+/* ============ HELPERS ============ */
+function starStr(st){return '★★★★★★★★'.slice(0,st)+'☆☆☆☆☆☆☆☆'.slice(0,8-st);}
+function slug(s){return s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
+function cardImg(c){return (typeof CARDIMG!=='undefined'&&CARDIMG[slug(c.nm)])||null;}
+function miniCard(c,idx,opts){opts=opts||{};const e=EL[c.el];const src=cardImg(c);
+  const badge=opts.badge?`<div class="badge">${opts.badge}</div>`:'';
+  if(src)return `<div class="mini imgcard${opts.picked?' picked':''}${opts.dim?' dim':''}" style="--rc:${RAR[c.rar]}" ${opts.onclick?`onclick="${opts.onclick}"`:''}>${badge}<img src="${src}" alt="${c.nm}" loading="lazy"></div>`;
+  return `<div class="mini${opts.picked?' picked':''}${opts.dim?' dim':''}" style="--rc:${RAR[c.rar]};--el-c:${e.c}" ${opts.onclick?`onclick="${opts.onclick}"`:''}>${badge}
+    <div class="top"><svg class="el" style="color:${e.c}"><use href="#${e.i}"/></svg><span class="stars">${starStr(c.st)}</span></div>
+    <div class="art"><svg class="ico" style="color:${e.c}"><use href="#${e.i}"/></svg></div>
+    <div class="nm">${c.nm}</div><div class="stat"><span>${c.atk}</span><span class="d">${c.def}</span></div></div>`;}
+
+/* ============ COLEÇÃO ============ */
+const FILTERS=[['Todas',null],['🔥 Fogo','fogo'],['💧 Água','agua'],['🌿 Natureza','nat'],['⚡ Raio','raio'],['Raras+','rar']];
+let colFilter=null;
+function renderChips(){document.getElementById('colChips').innerHTML=FILTERS.map((f,i)=>`<button class="chip${(colFilter===f[1])||(i===0&&colFilter===null)?' on':''}" onclick="setFilter(${JSON.stringify(f[1])})">${f[0]}</button>`).join('');}
+function setFilter(v){colFilter=v;renderChips();renderCollection();}
+function renderCollection(){let list=DECKI.map((c,i)=>({c,i}));
+  if(colFilter==='rar')list=list.filter(x=>x.c.rar==='rara'||x.c.rar==='epica');
+  else if(colFilter)list=list.filter(x=>x.c.el===colFilter);
+  document.getElementById('cardsGrid').innerHTML=list.map(x=>miniCard(x.c,x.i,{onclick:`openCard(${x.i})`,dim:!owned(x.i)})).join('');}
+
+/* ============ CARD MODAL ============ */
+function openCard(i){const c=DECKI[i],e=EL[c.el];const src=cardImg(c);
+  document.getElementById('cardModalBody').innerHTML=src?`<div style="position:relative;width:min(80%,320px)">
+      <button class="mclose" onclick="closeCard()"><svg class="ico"><use href="#i-close"/></svg></button>
+      <img src="${src}" alt="${c.nm}" style="width:100%;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.7)">
+      <div style="text-align:center;margin-top:10px;font-size:12.5px;color:var(--silver);line-height:1.35">${c.sp}</div></div>`
+    :`<div class="bigcard" style="--rc:${RAR[c.rar]};--el-c:${e.c}">
+    <button class="mclose" onclick="closeCard()"><svg class="ico"><use href="#i-close"/></svg></button>
+    <div class="bhdr">${c.nm}</div>
+    <div class="row"><span style="display:flex;align-items:center;gap:5px"><svg style="width:14px;height:14px;color:${e.c}"><use href="#${e.i}"/></svg>${e.nm}</span><span class="st">${starStr(c.st)}</span></div>
+    <div class="bart"><svg class="ico" style="color:${e.c}"><use href="#${e.i}"/></svg></div>
+    <div class="spec-l">Especial · ${RARN[c.rar]}</div><div class="spec">${c.sp}</div>
+    <div class="bstat"><div><span class="lb">ATQ</span> <b>${c.atk}</b></div><div><span class="lb">DEFESA</span> <b>${c.def}</b></div></div></div>`;
+  document.getElementById('cardModal').classList.add('open');}
+function closeCard(){document.getElementById('cardModal').classList.remove('open');}
+
+/* ============ DECK BUILDER ============ */
+let deck=[0,1,10,15,26,32,39,45]; // deck padrão válido (14★, 8 cartas)
+function deckStars(){return deck.reduce((s,i)=>s+DECKI[i].st,0);}
+function renderDeck(){
+  const stars=deckStars(),ok=deck.length===8&&stars<=20;
+  document.getElementById('deckCount').textContent=deck.length+'/8 cartas';
+  document.getElementById('deckStars').textContent=stars+'/20 ★';
+  document.getElementById('deckStars').style.color=stars>20?'var(--danger)':'var(--silver-d)';
+  document.getElementById('deckSave').disabled=!ok;
+  document.getElementById('deckStatus').innerHTML=ok?`<span style="color:var(--ok)">✓ Deck válido — pronto para duelar</span>`
+    :deck.length!==8?`<span style="color:var(--silver-d)">Escolha ${8-deck.length>0?8-deck.length+' carta(s) a mais':'menos cartas'} · toque para adicionar/remover</span>`
+    :`<span style="color:var(--danger)">Passou de 20★ — troque cartas mais fortes</span>`;
+  document.getElementById('deckGrid').innerHTML=DECKI.map((c,i)=>{const pos=deck.indexOf(i);const ok=owned(i);
+    return miniCard(c,i,{picked:pos>=0,dim:!ok,badge:pos>=0?'✓':null,onclick:ok?`toggleDeck(${i})`:''});}).join('');}
+function toggleDeck(i){if(!owned(i)){toast('Carta bloqueada — desbloqueie na Loja');return;}const p=deck.indexOf(i);if(p>=0)deck.splice(p,1);else if(deck.length<8)deck.push(i);renderDeck();if(navigator.vibrate)navigator.vibrate(6);}
+/* saveDeck: definido no bloco Supabase (persiste na conta quando logado) */
+
+/* ============ DUELO (motor simplificado do GDD) ============ */
+let duel=null;
+function startDuel(){
+  const myDeck=(deck.length===8?deck:[11,12,0,6,23,25,37,50]).map(i=>DECKI[i]);
+  const shuffled=[...myDeck].sort(()=>Math.random()-.5);
+  const foePool=DECKI.slice().sort(()=>Math.random()-.5);
+  duel={you:15,foe:15,round:0,hand:shuffled.slice(0,4),foeHand:foePool.slice(0,4),
+    starter:null,phase:'atk',attacker:'you',atkCard:null,defCard:null,waiting:null,tick:null,toEnd:null,foeThink:null};
+  go('duel');renderDuel();resetSlots();dm('');coinFlip();
+}
+function renderDuel(){
+  document.getElementById('foeHp').textContent=Math.max(0,duel.foe)+' / 15';
+  document.getElementById('youHp').textContent=Math.max(0,duel.you)+' / 15';
+  document.getElementById('foeBar').style.width=Math.max(0,duel.foe)/15*100+'%';
+  document.getElementById('youBar').style.width=Math.max(0,duel.you)/15*100+'%';
+  document.getElementById('roundTrack').innerHTML=[0,1,2,3].map(r=>`<div class="rd ${r<duel.round?'done':r===duel.round?'now':''}">${r+1}</div>`).join('');
+  document.getElementById('handLbl').textContent=duel.hand.length+' cartas';
+}
+function other(s){return s==='you'?'foe':'you';}
+function dm(t){document.getElementById('duelMsg').innerHTML=t;}
+function resetSlots(){const f=document.getElementById('slotFoe'),y=document.getElementById('slotYou');
+  f.innerHTML='Carta do<br>adversário';y.innerHTML='Sua<br>carta';f.classList.remove('lit');y.classList.remove('lit');}
+/* ---- cronômetro de 10s ---- */
+function startTimer(seconds,onTimeout){
+  clearTimer();
+  duel.timeLeft=seconds;
+  const tb=document.getElementById('turnTimer'),tf=document.getElementById('turnFill'),ts=document.getElementById('turnSecs');
+  tb.classList.add('on');tb.classList.remove('low');ts.textContent=seconds;
+  tf.style.transition='none';tf.style.transform='scaleX(1)';void tf.offsetWidth;
+  tf.style.transition='transform '+seconds+'s linear';tf.style.transform='scaleX(0)';
+  duel.tick=setInterval(function(){if(!duel){clearInterval(duel.tick);return;}duel.timeLeft--;ts.textContent=Math.max(0,duel.timeLeft);if(duel.timeLeft<=3)tb.classList.add('low');if(duel.timeLeft<=0)clearInterval(duel.tick);},1000);
+  if(onTimeout)duel.toEnd=setTimeout(onTimeout,seconds*1000+80);
+}
+function clearTimer(){if(!duel)return;clearInterval(duel.tick);clearTimeout(duel.toEnd);clearTimeout(duel.foeThink);duel.tick=duel.toEnd=duel.foeThink=null;const tb=document.getElementById('turnTimer');if(tb)tb.classList.remove('on');}
+/* ---- sorteio de quem começa ---- */
+function coinFlip(){
+  duel.starter=Math.random()<.5?'you':'foe';
+  const ov=document.getElementById('resultOv');
+  ov.innerHTML='<div class="coin"></div><div class="rt" style="font-size:16px;color:var(--silver-l)">Sorteando quem começa…</div>';
+  ov.classList.add('show');
+  setTimeout(function(){if(!duel)return;
+    ov.innerHTML='<div class="rt" style="color:var(--gold-l);font-size:24px">'+(duel.starter==='you'?'Você começa!':'Adversário começa!')+'</div><div style="color:var(--silver);font-size:12.5px;margin-top:6px">Quem começa ataca primeiro</div>';
+    setTimeout(function(){if(!duel)return;ov.classList.remove('show');beginRound();},1450);
+  },1250);
+}
+/* ---- máquina de estados da rodada ---- */
+function beginRound(){
+  if(!duel)return;clearTimer();
+  if(duel.round>=4||duel.you<=0||duel.foe<=0)return endDuel();
+  duel.attacker=(duel.round%2===0)?duel.starter:other(duel.starter);
+  duel.phase='atk';duel.atkCard=null;duel.defCard=null;
+  renderDuel();resetSlots();renderHand(false);
+  promptPhase();
+}
+function promptPhase(){
+  if(!duel)return;
+  const picker=duel.phase==='atk'?duel.attacker:other(duel.attacker);
+  const verb=duel.phase==='atk'?'ataca':'defende';
+  const col=duel.phase==='atk'?'var(--gold-l)':'var(--agua)';
+  const rd=duel.round+1;
+  if(picker==='you'){
+    duel.waiting='you';
+    dm('<b>Rodada '+rd+'/4</b> · Você <b style="color:'+col+'">'+verb+'</b> — escolha uma carta');
+    renderHand(true);
+    startTimer(10,function(){autoPickYou();});
+  }else{
+    duel.waiting='foe';
+    dm('<b>Rodada '+rd+'/4</b> · Adversário <b style="color:'+col+'">'+verb+'</b>…');
+    renderHand(false);
+    startTimer(10,null);
+    duel.foeThink=setTimeout(function(){foePick();},1500+Math.random()*2600);
+  }
+}
+function foePick(){
+  if(!duel||duel.waiting!=='foe')return;
+  let idx;
+  if(duel.phase==='atk')idx=bestIdx(duel.foeHand,'atk');
+  else idx=bestDefIdx(duel.foeHand,duel.atkCard?duel.atkCard.card:null);
+  const card=duel.foeHand.splice(idx,1)[0];
+  duel.waiting=null;clearTimer();
+  commit('foe',card);
+}
+function playCard(idx){
+  if(!duel||duel.waiting!=='you')return;
+  const card=duel.hand.splice(idx,1)[0];
+  duel.waiting=null;clearTimer();
+  commit('you',card);
+}
+function autoPickYou(){
+  if(!duel||duel.waiting!=='you')return;
+  const idx=duel.phase==='atk'?bestIdx(duel.hand,'atk'):bestDefIdx(duel.hand,duel.atkCard?duel.atkCard.card:null);
+  const card=duel.hand.splice(idx,1)[0];
+  duel.waiting=null;clearTimer();
+  if(typeof toast==='function')toast('Tempo esgotado — carta automática');
+  commit('you',card);
+}
+function commit(side,card){
+  if(!duel)return;
+  const el=document.getElementById(side==='you'?'slotYou':'slotFoe');
+  el.innerHTML=slotHTML(card);el.classList.add('lit');
+  if(duel.phase==='atk'){
+    duel.atkCard={card:card,side:side};
+    duel.phase='def';
+    renderHand(false);
+    setTimeout(function(){if(duel)promptPhase();},700);
+  }else{
+    duel.defCard={card:card,side:side};
+    renderHand(false);
+    resolveRound();
+  }
+}
+function resolveRound(){
+  if(!duel)return;clearTimer();
+  const atk=duel.atkCard.card,def=duel.defCard.card,attackerIsYou=duel.atkCard.side==='you';
+  const bonus=elAdv(atk.el,def.el)?2:0;
+  const result=atk.atk+bonus-def.def;
+  const arena=document.querySelector('#s-duel .arena');
+  if(arena){arena.classList.add('clash');setTimeout(function(){arena.classList.remove('clash');},520);}
+  let msg;
+  if(result>0){if(attackerIsYou){duel.foe-=result;msg='Acertou! −'+result+' na Vida do adversário';}else{duel.you-=result;msg='O ataque conectou — você perde '+result+' de Vida';}}
+  else if(result<0){const r=Math.abs(result);if(attackerIsYou){duel.you-=r;msg='Recuo! A defesa segurou — você perde '+r;}else{duel.foe-=r;msg='Você segurou! −'+r+' no adversário (recuo)';}}
+  else msg='Empate no confronto — ninguém perde Vida';
+  if(bonus)msg+=' · vantagem elemental (+2)';
+  dm(msg);
+  renderDuel();
+  setTimeout(function(){if(!duel)return;duel.round++;beginRound();},2000);
+}
+function renderHand(active){
+  document.getElementById('duelHand').innerHTML=duel.hand.map(function(c,idx){return miniCard(c,idx,{onclick:active?'playCard('+idx+')':'',dim:!active});}).join('');
+}
+function elAdv(a,d){return BEATS[a]===d;}
+function slotHTML(c){return miniCard(c);}
+function bestIdx(hand,key){let bi=0,bv=-1;hand.forEach(function(c,i){if(c[key]>bv){bv=c[key];bi=i;}});return bi;}
+function bestDefIdx(hand,atkCard){let bi=0,bv=-99;hand.forEach(function(c,i){let v=c.def;if(atkCard&&BEATS[c.el]===atkCard.el)v+=1.5;if(atkCard&&BEATS[atkCard.el]===c.el)v-=1;if(v>bv){bv=v;bi=i;}});return bi;}
+function endDuel(){
+  clearTimer();renderDuel();
+  const win=duel.you>duel.foe,draw=duel.you===duel.foe;
+  const ov=document.getElementById('resultOv');
+  const title=draw?'EMPATE':(win?'VITÓRIA':'DERROTA');
+  const col=draw?'var(--silver-l)':(win?'var(--gold-l)':'var(--danger)');
+  ov.innerHTML='<div class="rt" style="color:'+col+'">'+title+'</div>'+
+    '<div style="color:var(--silver);font-size:13px">Vida final '+Math.max(0,duel.you)+' × '+Math.max(0,duel.foe)+'</div>'+
+    (win?'<div style="color:var(--gold-l);font-size:13px;margin-top:4px">+30 Ouro · +25 pts</div>':'')+
+    '<button class="btn gold sm" style="margin-top:12px" onclick="go(\'home\')">Voltar à Ilha</button>'+
+    '<button class="btn ghost sm" onclick="startDuel()">Jogar de novo</button>';
+  ov.classList.add('show');dm('');
+  if(win){const o=document.getElementById('ouro');o.textContent=(+o.textContent+30);}
+}
+
+/* ============ LOJA ============ */
+const PACKS=[['Pack do Recruta','var(--comum)','5 cartas comuns/incomuns',120,'i-cards'],['Pack do Bronze','var(--rara)','5 cartas · 1 rara garantida',280,'i-cards'],['Pack Épico','var(--epica)','5 cartas · 1 épica garantida',600,'i-gem'],['Pack Elemental','var(--fogo)','5 cartas de um elemento',350,'i-flame']];
+function renderShop(){
+  document.getElementById('packGrid').innerHTML=PACKS.map((p,i)=>`<div class="pack" style="--pc:${p[1]}"><div class="pglow"></div>
+    <div class="pico"><svg class="ico" style="color:var(--cream)"><use href="#${p[4]}"/></svg></div>
+    <div class="pn">${p[0]}</div><div class="pd">${p[2]}</div>
+    <button class="btn gold sm price" onclick="openPack(${i})"><svg class="ico"><use href="#i-coin"/></svg> ${p[3]}</button></div>`).join('');
+  document.getElementById('craftGrid').innerHTML=[['Comum','var(--comum)',40],['Incomum','var(--incomum)',100],['Rara','var(--rara)',400],['Épica','var(--epica)',1200]]
+    .map(r=>`<div class="panel row-item"><div class="av" style="--el:${r[1]}"><svg class="ico" style="color:${r[1]}"><use href="#i-cards"/></svg></div>
+      <div class="mid"><b>Carta ${r[0]}</b><span>Escolha qualquer carta desta raridade</span></div>
+      <button class="btn gold sm"><svg class="ico"><use href="#i-gem"/></svg> ${r[2]}</button></div>`).join('');
+}
+function shopTab(t,el){document.querySelectorAll('#shopSeg button').forEach(b=>b.classList.remove('on'));el.classList.add('on');
+  document.getElementById('shopPacks').style.display=t==='packs'?'':'none';document.getElementById('shopCraft').style.display=t==='craft'?'':'none';}
+function openPack(i){const pool=DECKI.slice().sort(()=>Math.random()-.5).slice(0,5);
+  document.getElementById('packTitle').textContent=PACKS[i][0];
+  document.getElementById('packReveal').innerHTML=pool.map((c,idx)=>`<div id="pk${idx}" onclick="revealPk(${idx},${DECKI.indexOf(c)})">
+    <div class="mini" style="--rc:var(--silver-d);--el-c:#33507a"><div class="art" style="margin:0;height:100%"><svg class="ico" style="color:var(--silver-d);width:40%;height:40%"><use href="#i-crown"/></svg></div></div></div>`).join('');
+  go('pack');}
+function revealPk(idx,ci){const c=DECKI[ci];document.getElementById('pk'+idx).innerHTML=miniCard(c,ci,{onclick:`openCard(${ci})`});if(navigator.vibrate)navigator.vibrate(8);}
+
+/* ============ CARREIRA ============ */
+const CONTS=[['Chamalar','fogo','var(--fogo)'],['Selvaria','nat','var(--natureza)'],['Tormenália','raio','var(--raio)'],['Nereida','agua','var(--agua)']];
+let carCont=0;
+function renderCarreira(){
+  document.getElementById('carSeg').innerHTML=CONTS.map((c,i)=>`<button class="${i===carCont?'on':''}" onclick="carCont=${i};renderCarreira()">${c[0]}</button>`).join('');
+  const col=CONTS[carCont][2],unlocked=carCont===0?4:carCont===1?1:0;
+  const stages=[['Sentinela da Fronteira',1],['Duelo no Vale',1],['Arena Menor',2],['Chefe: Guardião Elemental',3]];
+  document.getElementById('carPath').innerHTML=stages.map((s,i)=>{const lk=i>=unlocked;
+    return `<div class="panel stage${lk?' locked':''}" style="--el:${col}" ${lk?'':`onclick="startDuel()"`}>
+      <div class="num">${lk?'<svg style="width:18px;height:18px" class="ico"><use href="#i-lock"/></svg>':i+1}</div>
+      <div class="info"><b>${s[0]}</b><span>${lk?'Bloqueado':'Recompensa: '+(60+i*20)+' ouro'}</span></div>
+      <div class="st">${lk?'':i<unlocked-1?'<span class="pill" style="background:rgba(90,208,122,.15);color:var(--ok)">★★★</span>':'<svg class="ico" style="width:20px;height:20px;color:'+col+'"><use href="#i-play"/></svg>'}</div></div>`;}).join('');
+}
+
+/* ============ TORRE ============ */
+function renderTorre(){document.getElementById('towerList').innerHTML=[8,9,10,11,12].map((f,i)=>
+  `<div class="panel floor"><div class="fl">${f}</div><div class="info"><b>Andar ${f}</b><span>Bot ${['Aprendiz','Veterano','Élite','Campeão','Lendário'][i]} · ${['Bronze','Prata','Prata','Ouro','Ouro'][i]}</span></div>
+    <div class="rt" style="font-size:12px;color:var(--gold-l);display:flex;align-items:center;gap:4px"><svg class="ico" style="width:14px;height:14px"><use href="#i-coin"/></svg>${40+i*20}</div></div>`).join('');}
+
+/* ============ RANKING ============ */
+const RANKS=[['DragãoRubro','fogo',2840,'Mítico','var(--mitica)'],['NéreoAzul','agua',2610,'Diamante','var(--rara)'],['FolhaVerde','nat',2405,'Diamante','var(--rara)'],['TempestadeX','raio',2190,'Ouro','var(--gold)'],['EmberLady','fogo',1980,'Ouro','var(--gold)'],['MaréCheia','agua',1760,'Prata','var(--silver)'],['LoboCinza','nat',1540,'Prata','var(--silver)'],['RaioVeloz','raio',1330,'Bronze','var(--ember)']];
+function renderRank(){document.getElementById('rankList').innerHTML=RANKS.map((r,i)=>
+  `<div class="panel row-item"><div class="rk">${i+1}</div><div class="av" style="--el:${EL[r[1]].c}"><svg class="ico" style="color:${EL[r[1]].c}"><use href="#${EL[r[1]].i}"/></svg></div>
+    <div class="mid"><b>${r[0]}</b><span><span class="pill" style="background:${r[4]}22;color:${r[4]}">${r[3]}</span></span></div>
+    <div class="rt"><b>${r[2].toLocaleString('pt-BR')}</b><span style="color:var(--silver-d)">pts</span></div></div>`).join('');}
+
+/* ============ CLÃ ============ */
+const CLAN=[['Vulcanor_','fogo','Líder',420],['NeriTri','agua','Oficial',380],['Gaiah','nat','Oficial',350],['ZephBolt','raio','Membro',310],['EmberK','fogo','Membro',280],['MaréViva','agua','Membro',240],['LoboFeroz','nat','Membro',200],['TrovãoJr','raio','Membro',160]];
+function renderClan(){document.getElementById('clanList').innerHTML=CLAN.map(m=>
+  `<div class="panel row-item"><div class="av" style="--el:${EL[m[1]].c}"><svg class="ico" style="color:${EL[m[1]].c}"><use href="#${EL[m[1]].i}"/></svg></div>
+    <div class="mid"><b>${m[0]}</b><span>${m[2]}</span></div><div class="rt"><b>${m[3]}</b><span style="color:var(--silver-d)">contrib.</span></div></div>`).join('');}
+
+/* ============ PERFIL ============ */
+function renderPerfil(){
+  document.getElementById('badges').innerHTML=[['Primeira Vitória','i-sword','var(--gold)'],['10 Duelos','i-shield','var(--rara)'],['Colecionador','i-cards','var(--natureza)'],['Chamalar','i-flame','var(--fogo)']]
+    .map(b=>`<div class="badge2"><div class="b" style="--el:${b[2]}"><svg class="ico" style="color:${b[2]}"><use href="#${b[1]}"/></svg></div><span>${b[0]}</span></div>`).join('');
+  document.getElementById('history').innerHTML=[['Vitória','var(--ok)','vs NéreoAzul','+25'],['Vitória','var(--ok)','vs LoboCinza','+22'],['Derrota','var(--danger)','vs DragãoRubro','−18'],['Vitória','var(--ok)','vs RaioVeloz','+20']]
+    .map(h=>`<div class="panel row-item"><div class="av" style="--el:${h[1]}"><svg class="ico" style="color:${h[1]}"><use href="#i-sword"/></svg></div>
+      <div class="mid"><b style="color:${h[1]}">${h[0]}</b><span>${h[2]}</span></div><div class="rt"><b style="color:${h[1]}">${h[3]}</b><span style="color:var(--silver-d)">pts</span></div></div>`).join('');}
+
+/* ============ MISC ============ */
+function claimDaily(b){b.textContent='✓';b.disabled=true;const o=document.getElementById('ouro');o.textContent=(+o.textContent+50);toast('+50 de Ouro coletado!');}
+let toastT;function toast(msg){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:absolute;left:50%;bottom:96px;transform:translateX(-50%);z-index:30;background:linear-gradient(180deg,#22467e,#0e2247);border:1px solid var(--gold);color:var(--cream);font-family:Cinzel,serif;font-size:12px;letter-spacing:.05em;padding:10px 18px;border-radius:20px;box-shadow:0 8px 20px rgba(0,0,0,.5);opacity:0;transition:opacity .3s';document.getElementById('app').appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';clearTimeout(toastT);toastT=setTimeout(()=>t.style.opacity='0',1600);}
+
+/* ============ ROTEADOR ============ */
+const NAV=['home','map','collection','shop','ranking'];
+const INIT={collection:()=>{renderChips();renderCollection();},deck:renderDeck,shop:renderShop,carreira:renderCarreira,torre:renderTorre,ranking:renderRank,clan:renderClan,perfil:renderPerfil};
+function go(id){
+  if(id==='duel'&&!duel){return startDuel();}
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const scr=document.getElementById('s-'+id);if(!scr)return;
+  scr.classList.add('active');scr.scrollTop=0;closeCard();setBg(id);
+  const chrome=id!=='splash';
+  document.getElementById('topbar').classList.toggle('hidden',!chrome);
+  document.getElementById('bottomnav').classList.toggle('hidden',!NAV.includes(id));
+  document.querySelectorAll('.navb').forEach(b=>b.classList.toggle('active',b.dataset.scr===id));
+  if(id!=='duel'){const ov=document.getElementById('resultOv');if(ov){ov.classList.remove('show');}if(typeof clearTimer==='function')clearTimer();duel=null;}
+  if(INIT[id])INIT[id]();
+  if(navigator.vibrate)navigator.vibrate(5);
+}
+/* ============ SUPABASE — contas, coleção e deck ============ */
+const SB_URL='https://yixityvcnrdlffogbgnc.supabase.co';
+const SB_KEY='sb_publishable_HlsIBd5Px0tKzuEqMxpLWg_PeG-Cjh9';
+let sb=null; try{ if(window.supabase) sb=window.supabase.createClient(SB_URL,SB_KEY); }catch(e){}
+let online=false, profile=null, ownedSet=null;
+const SLUG2I={}; DECKI.forEach((c,i)=>SLUG2I[slug(c.nm)]=i);
+function owned(i){ return !online || !ownedSet || ownedSet.has(slug(DECKI[i].nm)); }
+function authMsg(t,ok){const el=document.getElementById('authMsg'); if(el){el.textContent=t||''; el.style.color=ok?'var(--ok)':'var(--danger)';}}
+function authVal(id){const el=document.getElementById(id); return el?el.value.trim():'';}
+async function doSignup(){
+  if(!sb){authMsg('Sem conexão com o servidor.');return;}
+  const email=authVal('authEmail'), pass=authVal('authPass');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){authMsg('Digite um e-mail válido.');return;}
+  if(pass.length<6){authMsg('A senha precisa de 6+ caracteres.');return;}
+  authMsg('Criando conta…',true);
+  const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{username:email.split('@')[0]}}});
+  if(error){authMsg(error.message);return;}
+  if(!data.session){authMsg('Conta criada! Confirme pelo e-mail e depois entre.',true);return;}
+  await afterAuth();
+}
+async function doLogin(){
+  if(!sb){authMsg('Sem conexão com o servidor.');return;}
+  const email=authVal('authEmail'), pass=authVal('authPass');
+  if(!email||!pass){authMsg('Preencha e-mail e senha.');return;}
+  authMsg('Entrando…',true);
+  const {error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){authMsg('E-mail ou senha incorretos.');return;}
+  await afterAuth();
+}
+function playGuest(){ online=false; profile=null; ownedSet=null; applyProfile(); enter(); }
+async function afterAuth(){ authMsg(''); await loadUserData(); enter(); }
+async function doLogout(){ try{ if(sb) await sb.auth.signOut(); }catch(e){} online=false; profile=null; ownedSet=null; deck=[0,1,10,15,26,32,39,45]; go('splash'); }
+async function loadUserData(){
+  try{
+    const {data:{user}}=await sb.auth.getUser();
+    if(!user){online=false;return;}
+    online=true;
+    const {data:prof}=await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();
+    profile=prof||{username:(user.email||'').split('@')[0],ouro:250,gemas:12};
+    const {data:col}=await sb.from('collection').select('card_slug');
+    ownedSet=new Set((col||[]).map(r=>r.card_slug));
+    const {data:dk}=await sb.from('decks').select('cartas').eq('ativo',true).order('updated_at',{ascending:false}).limit(1);
+    if(dk&&dk[0]&&dk[0].cartas&&dk[0].cartas.length){
+      const idx=dk[0].cartas.map(s=>SLUG2I[s]).filter(x=>x!==undefined);
+      if(idx.length) deck=idx;
+    }
+    applyProfile();
+  }catch(e){ online=false; }
+}
+function applyProfile(){
+  const nm=document.querySelector('#topbar .who .nm');
+  if(nm) nm.textContent=(online&&profile)?(profile.username||'Gladiador'):'Convidado';
+  if(online&&profile){
+    const o=document.getElementById('ouro'); if(o&&profile.ouro!=null)o.textContent=profile.ouro;
+    const g=document.getElementById('ess'); if(g&&profile.gemas!=null)g.textContent=profile.gemas;
+  }
+}
+async function saveDeck(){
+  if(online&&sb){
+    try{
+      const {data:{user}}=await sb.auth.getUser();
+      const slugs=deck.map(i=>slug(DECKI[i].nm));
+      const {data:ex}=await sb.from('decks').select('id').eq('ativo',true).order('updated_at',{ascending:false}).limit(1);
+      if(ex&&ex[0]) await sb.from('decks').update({cartas:slugs,updated_at:new Date().toISOString()}).eq('id',ex[0].id);
+      else await sb.from('decks').insert({user_id:user.id,cartas:slugs,ativo:true});
+      toast('Deck salvo na sua conta!');
+    }catch(e){ toast('Deck salvo (offline).'); }
+  } else { toast('Deck salvo!'); }
+  go('home');
+}
+async function initAuth(){ try{ if(!sb) return; const {data}=await sb.auth.getSession(); if(data&&data.session){ await loadUserData(); if(online) enter(); } }catch(e){} }
+initAuth();
+
+function enter(){go('home');}
+
+/* ============ FUNDOS DE CENA (GPT) ============ */
+const BG_KEY={splash:'splash',map:'map',duel:'duel'};
+function setBg(id){const el=document.getElementById('appbg');if(!el)return;
+  const k=BG_KEY[id];el.classList.toggle('duel',id==='duel');
+  if(k&&typeof BGIMG!=='undefined'&&BGIMG[k]){el.style.backgroundImage=`url("${BGIMG[k]}")`;el.classList.add('show');}
+  else{el.classList.remove('show');}}
+function applyArt(){
+  const hero=document.querySelector('#s-home .hero');
+  if(hero&&typeof BGIMG!=='undefined'&&BGIMG.home){
+    hero.style.background=`linear-gradient(180deg,rgba(8,13,26,.12),rgba(8,13,26,.55) 55%,rgba(8,13,26,.9)),url("${BGIMG.home}") center 30%/cover no-repeat`;
+    hero.style.borderColor='var(--gold)';}
+  setBg('splash');
+}
+applyArt();
+
+/* ============ CANVAS BRASAS ============ */
+(function(){const cv=document.getElementById('embers'),cx=cv.getContext('2d');let W,H,P=[];
+  function size(){const r=document.getElementById('app').getBoundingClientRect();W=cv.width=r.width;H=cv.height=r.height;}
+  function seed(){P=Array.from({length:34},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.8+.4,s:Math.random()*.3+.08,d:Math.random()*.6-.3,a:Math.random()*.5+.2,h:Math.random()<.5?38:210}));}
+  function loop(){cx.clearRect(0,0,W,H);for(const p of P){p.y-=p.s;p.x+=p.d;if(p.y<-4){p.y=H+4;p.x=Math.random()*W;}cx.beginPath();cx.arc(p.x,p.y,p.r,0,7);cx.fillStyle=`hsla(${p.h},80%,65%,${p.a})`;cx.shadowBlur=8;cx.shadowColor=`hsla(${p.h},90%,60%,.8)`;cx.fill();}requestAnimationFrame(loop);}
+  size();seed();loop();window.addEventListener('resize',()=>{size();seed();});
+})();
+</script>
+</body>
+</html>

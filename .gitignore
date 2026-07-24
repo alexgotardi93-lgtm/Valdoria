@@ -1,0 +1,28 @@
+# gerados / scratch
+valdoria-standalone.html
+*.zip
+_bundle/
+_newduel.txt
+
+# screenshots de teste
+*-splash.png
+*-home.png
+*-map.png
+*-duel*.png
+*-collection.png
+b-*.png
+d-*.png
+t-*.png
+shot*.png
+v-*.png
+t-*.png
+
+# node / os
+node_modules/
+.DS_Store
+Thumbs.db
+
+# segredos (nunca commitar chaves)
+.env
+.env.*
+supabase/.temp/

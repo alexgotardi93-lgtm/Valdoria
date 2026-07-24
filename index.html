@@ -244,6 +244,7 @@ img{max-width:100%;display:block}
 .slot{width:78px;aspect-ratio:3/4;border-radius:10px;border:1.5px dashed var(--line-strong);display:grid;place-items:center;color:var(--silver-d);font-size:10px;text-align:center;background:rgba(8,14,30,.5)}
 .slot.foe{border-color:rgba(224,83,60,.5)}.slot.you{border-color:rgba(90,208,122,.5)}
 .slot .mini{width:100%;height:100%;aspect-ratio:auto}
+.shopcard{display:flex;flex-direction:column;gap:7px}.shopcard .mini{width:100%}.shopcard .price{width:100%;justify-content:center}
 .vs{font-family:"Cinzel Decorative",serif;color:var(--gold-l);font-size:19px;text-shadow:0 0 10px rgba(230,178,77,.4)}
 .duel-msg{text-align:center;font-family:"Cinzel",serif;color:var(--gold-l);font-size:13px;letter-spacing:.04em;margin:8px 0 6px;min-height:18px}
 .duel-msg b{color:var(--cream)}
@@ -396,7 +397,7 @@ img{max-width:100%;display:block}
     <a class="back" onclick="go('home')"><svg class="ico"><use href="#i-back"/></svg> Sair do duelo</a>
     <div class="pg-title">Duelo</div>
     <div class="panel duel-side"><div class="crest" style="width:34px;height:34px;border-color:var(--danger)"><svg class="ico" style="width:17px;height:17px;color:var(--danger)"><use href="#i-shield"/></svg></div>
-      <div class="vida"><div class="lab"><b>Adversário</b><span id="foeHp">15 / 15</span></div><div class="bar foe"><span id="foeBar" style="width:100%"></span></div></div></div>
+      <div class="vida"><div class="lab"><b>Adversário</b><span id="foeHp">20 / 20</span></div><div class="bar foe"><span id="foeBar" style="width:100%"></span></div></div></div>
     <div class="rounds" id="roundTrack"></div>
     <div class="turn-timer" id="turnTimer"><i id="turnFill"></i><b id="turnSecs">10</b></div>
     <div style="position:relative">
@@ -405,7 +406,7 @@ img{max-width:100%;display:block}
     </div>
     <div class="duel-msg" id="duelMsg"></div>
     <div class="panel duel-side" style="margin-top:2px"><div class="crest" style="width:34px;height:34px;border-color:var(--ok)"><svg class="ico" style="width:17px;height:17px;color:var(--ok)"><use href="#i-flame"/></svg></div>
-      <div class="vida"><div class="lab"><b>Você</b><span id="youHp">15 / 15</span></div><div class="bar you"><span id="youBar" style="width:100%"></span></div></div></div>
+      <div class="vida"><div class="lab"><b>Você</b><span id="youHp">20 / 20</span></div><div class="bar you"><span id="youBar" style="width:100%"></span></div></div></div>
     <div class="sect-h"><h3>Sua Mão</h3><span class="more" id="handLbl"></span></div>
     <div class="hand" id="duelHand"></div>
     <div class="spacer"></div>
@@ -414,13 +415,13 @@ img{max-width:100%;display:block}
   <!-- LOJA -->
   <section class="screen has-top has-nav" id="s-shop">
     <div class="pg-title">Loja</div>
-    <div class="seg" id="shopSeg"><button class="on" onclick="shopTab('packs',this)">Packs</button><button onclick="shopTab('craft',this)">Essência</button></div>
+    <div class="seg" id="shopSeg"><button class="on" onclick="shopTab('packs',this)">Loja diária</button><button onclick="shopTab('craft',this)">Forja</button></div>
     <div id="shopPacks"><div class="grid2" id="packGrid"></div>
       <p class="hint">Ouro é ganho jogando. Duplicatas viram Essência para craftar cartas específicas.</p></div>
     <div id="shopCraft" style="display:none">
       <div class="panel pad" style="text-align:center"><span class="corner tl"></span><span class="corner br"></span>
         <div class="pstat-grid" style="grid-template-columns:1fr 1fr"><div class="pstat"><b id="essTotal">12</b><span>Essência</span></div><div class="pstat"><b>0</b><span>Craftadas</span></div></div></div>
-      <div class="sect-h"><h3>Craftar por raridade</h3></div>
+      <div class="sect-h"><h3>Forjar cartas que faltam</h3></div>
       <div id="craftGrid"></div>
     </div>
     <div class="spacer"></div>
@@ -615,19 +616,19 @@ function toggleDeck(i){if(!owned(i)){toast('Carta bloqueada — desbloqueie na L
 
 /* ============ DUELO (motor simplificado do GDD) ============ */
 let duel=null;
-function startDuel(){
+function startDuel(careerElem){
   const myDeck=(deck.length===8?deck:[11,12,0,6,23,25,37,50]).map(i=>DECKI[i]);
   const shuffled=[...myDeck].sort(()=>Math.random()-.5);
   const foePool=DECKI.slice().sort(()=>Math.random()-.5);
-  duel={you:15,foe:15,round:0,hand:shuffled.slice(0,4),foeHand:foePool.slice(0,4),
-    starter:null,phase:'atk',attacker:'you',atkCard:null,defCard:null,waiting:null,tick:null,toEnd:null,foeThink:null};
+  duel={you:20,foe:20,round:0,hand:shuffled.slice(0,4),foeHand:foePool.slice(0,4),
+    starter:null,phase:'atk',attacker:'you',atkCard:null,defCard:null,waiting:null,tick:null,toEnd:null,foeThink:null,careerElem:careerElem||null};
   go('duel');renderDuel();resetSlots();dm('');coinFlip();
 }
 function renderDuel(){
-  document.getElementById('foeHp').textContent=Math.max(0,duel.foe)+' / 15';
-  document.getElementById('youHp').textContent=Math.max(0,duel.you)+' / 15';
-  document.getElementById('foeBar').style.width=Math.max(0,duel.foe)/15*100+'%';
-  document.getElementById('youBar').style.width=Math.max(0,duel.you)/15*100+'%';
+  document.getElementById('foeHp').textContent=Math.max(0,duel.foe)+' / 20';
+  document.getElementById('youHp').textContent=Math.max(0,duel.you)+' / 20';
+  document.getElementById('foeBar').style.width=Math.max(0,duel.foe)/20*100+'%';
+  document.getElementById('youBar').style.width=Math.max(0,duel.you)/20*100+'%';
   document.getElementById('roundTrack').innerHTML=[0,1,2,3].map(r=>`<div class="rd ${r<duel.round?'done':r===duel.round?'now':''}">${r+1}</div>`).join('');
   document.getElementById('handLbl').textContent=duel.hand.length+' cartas';
 }
@@ -759,42 +760,83 @@ function endDuel(){
     '<button class="btn gold sm" style="margin-top:12px" onclick="go(\'home\')">Voltar à Ilha</button>'+
     '<button class="btn ghost sm" onclick="startDuel()">Jogar de novo</button>';
   ov.classList.add('show');dm('');
-  if(win){const o=document.getElementById('ouro');o.textContent=(+o.textContent+30);}
+  if(online&&sb){
+    sb.rpc('duel_reward',{p_win:win}).then(function(r){if(r.data&&r.data.ok){if(profile)profile.ouro=r.data.ouro;var o=document.getElementById('ouro');if(o)o.textContent=r.data.ouro;}});
+    if(win&&duel.careerElem){var ce=duel.careerElem;sb.rpc('career_claim',{p_elem:ce}).then(function(r){if(r.data&&r.data.ok){ownedSet.add(r.data.slug);career[ce]=r.data.estagio;if(profile)profile.ouro=r.data.ouro;var o=document.getElementById('ouro');if(o)o.textContent=r.data.ouro;var nm=(SLUG2I[r.data.slug]!=null)?DECKI[SLUG2I[r.data.slug]].nm:'carta';toast('Recompensa: '+nm+'!');}});}
+  } else if(win){const o=document.getElementById('ouro');o.textContent=(+o.textContent+30);}
 }
 
-/* ============ LOJA ============ */
-const PACKS=[['Pack do Recruta','var(--comum)','5 cartas comuns/incomuns',120,'i-cards'],['Pack do Bronze','var(--rara)','5 cartas · 1 rara garantida',280,'i-cards'],['Pack Épico','var(--epica)','5 cartas · 1 épica garantida',600,'i-gem'],['Pack Elemental','var(--fogo)','5 cartas de um elemento',350,'i-flame']];
-function renderShop(){
-  document.getElementById('packGrid').innerHTML=PACKS.map((p,i)=>`<div class="pack" style="--pc:${p[1]}"><div class="pglow"></div>
-    <div class="pico"><svg class="ico" style="color:var(--cream)"><use href="#${p[4]}"/></svg></div>
-    <div class="pn">${p[0]}</div><div class="pd">${p[2]}</div>
-    <button class="btn gold sm price" onclick="openPack(${i})"><svg class="ico"><use href="#i-coin"/></svg> ${p[3]}</button></div>`).join('');
-  document.getElementById('craftGrid').innerHTML=[['Comum','var(--comum)',40],['Incomum','var(--incomum)',100],['Rara','var(--rara)',400],['Épica','var(--epica)',1200]]
-    .map(r=>`<div class="panel row-item"><div class="av" style="--el:${r[1]}"><svg class="ico" style="color:${r[1]}"><use href="#i-cards"/></svg></div>
-      <div class="mid"><b>Carta ${r[0]}</b><span>Escolha qualquer carta desta raridade</span></div>
-      <button class="btn gold sm"><svg class="ico"><use href="#i-gem"/></svg> ${r[2]}</button></div>`).join('');
+/* ============ LOJA DIÁRIA + FORJA ============ */
+const FORJA={comum:40,incomum:120,rara:400,epica:1000};
+function fmtTimer(s){s=Math.max(0,s|0);var h=(s/3600)|0,m=((s%3600)/60)|0;return h+'h '+(m<10?'0':'')+m+'m';}
+async function renderShop(){
+  var pg=document.getElementById('packGrid');
+  if(!online||!sb){pg.innerHTML='<div class="panel" style="grid-column:1/-1;text-align:center;padding:22px;color:var(--silver)">Entre na sua conta para usar a Loja diária.</div>';var cg0=document.getElementById('craftGrid');if(cg0)cg0.innerHTML='';return;}
+  pg.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--silver-d);padding:18px">Carregando loja…</div>';
+  var r=await sb.rpc('shop_get');
+  if(!r.data||r.data.error){pg.innerHTML='<div class="panel" style="grid-column:1/-1;text-align:center;padding:22px;color:var(--danger)">Não deu pra carregar a loja.</div>';return;}
+  shopData=r.data;renderShopCards();renderForge();
 }
-function shopTab(t,el){document.querySelectorAll('#shopSeg button').forEach(b=>b.classList.remove('on'));el.classList.add('on');
+function shopCardObj(c){return {nm:c.nome,el:c.elemento,rar:c.raridade,st:c.custo,atk:c.atk,def:c.def,sp:''};}
+function renderShopCards(){
+  var cs=(shopData&&shopData.cartas)||[];
+  var head='<div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;margin:0 2px 2px"><span style="font-family:Cinzel,serif;color:var(--gold-l);font-size:12px;letter-spacing:.05em">6 cartas do dia</span><span style="font-size:12px;color:var(--silver-d)">renova em '+fmtTimer(shopData.renova_em)+'</span></div>';
+  document.getElementById('packGrid').innerHTML=head+cs.map(function(c){
+    var mc=miniCard(shopCardObj(c),0,{onclick:'openCardSlug(\''+c.slug+'\')'});
+    return '<div class="shopcard">'+mc+'<button class="btn '+(c.comprado?'ghost':'gold')+' sm price" '+(c.comprado?'disabled':'onclick="buyShop(\''+c.slug+'\')"')+'>'+(c.comprado?'Comprado':'<svg class="ico"><use href="#i-coin"/></svg> '+c.preco)+'</button></div>';
+  }).join('');
+}
+async function buyShop(sl){
+  if(!online||!sb)return;
+  var r=await sb.rpc('shop_buy',{p_slug:sl});var d=r.data||{};
+  if(d.ok){if(profile){profile.ouro=d.ouro;profile.essencia=d.essencia;}ownedSet.add(sl);applyProfile();var cc=(shopData.cartas||[]).find(function(x){return x.slug===sl;});if(cc)cc.comprado=true;renderShopCards();renderForge();toast('Carta comprada!');}
+  else if(d.error==='sem_ouro')toast('Ouro insuficiente ('+d.preco+')');
+  else if(d.error==='ja_comprado')toast('Já comprada hoje');
+  else toast('Não deu pra comprar');
+}
+function shopTab(t,el){document.querySelectorAll('#shopSeg button').forEach(function(b){b.classList.remove('on');});el.classList.add('on');
   document.getElementById('shopPacks').style.display=t==='packs'?'':'none';document.getElementById('shopCraft').style.display=t==='craft'?'':'none';}
-function openPack(i){const pool=DECKI.slice().sort(()=>Math.random()-.5).slice(0,5);
-  document.getElementById('packTitle').textContent=PACKS[i][0];
-  document.getElementById('packReveal').innerHTML=pool.map((c,idx)=>`<div id="pk${idx}" onclick="revealPk(${idx},${DECKI.indexOf(c)})">
-    <div class="mini" style="--rc:var(--silver-d);--el-c:#33507a"><div class="art" style="margin:0;height:100%"><svg class="ico" style="color:var(--silver-d);width:40%;height:40%"><use href="#i-crown"/></svg></div></div></div>`).join('');
-  go('pack');}
-function revealPk(idx,ci){const c=DECKI[ci];document.getElementById('pk'+idx).innerHTML=miniCard(c,ci,{onclick:`openCard(${ci})`});if(navigator.vibrate)navigator.vibrate(8);}
+function renderForge(){
+  var g=document.getElementById('craftGrid');if(!g)return;
+  if(!online){g.innerHTML='<div class="panel" style="text-align:center;padding:16px;color:var(--silver)">Entre para forjar cartas.</div>';return;}
+  var ess=(profile&&profile.essencia)||0;var et=document.getElementById('essTotal');if(et)et.textContent=ess;
+  var missing=DECKI.map(function(c,i){return {c:c,i:i};}).filter(function(x){return ownedSet&&!ownedSet.has(slug(x.c.nm));});
+  if(!missing.length){g.innerHTML='<div class="panel" style="text-align:center;padding:16px;color:var(--ok)">Coleção completa — todas as 52!</div>';return;}
+  g.innerHTML=missing.map(function(x){var c=x.c;var cst=FORJA[c.rar];var im=cardImg(c);
+    return '<div class="panel row-item"><div class="av" style="--el:'+RAR[c.rar]+';overflow:hidden">'+(im?'<img src="'+im+'" style="width:100%;height:100%;object-fit:cover">':'<svg class="ico" style="color:'+RAR[c.rar]+'"><use href="#i-cards"/></svg>')+'</div>'+
+      '<div class="mid"><b>'+c.nm+'</b><span>'+RARN[c.rar]+'</span></div>'+
+      '<button class="btn gold sm" '+(ess<cst?'disabled':'onclick="forgeCard(\''+slug(c.nm)+'\')"')+'><svg class="ico"><use href="#i-gem"/></svg> '+cst+'</button></div>';
+  }).join('');
+}
+async function forgeCard(sl){
+  if(!online||!sb)return;
+  var r=await sb.rpc('forge_card',{p_slug:sl});var d=r.data||{};
+  if(d.ok){if(profile)profile.essencia=d.essencia;ownedSet.add(sl);applyProfile();renderForge();toast('Carta forjada!');}
+  else if(d.error==='sem_essencia')toast('Essência insuficiente ('+d.custo+')');
+  else if(d.error==='ja_possui')toast('Você já tem essa carta');
+  else toast('Não deu pra forjar');
+}
+function openCardSlug(sl){var i=SLUG2I[sl];if(i!=null)openCard(i);}
 
 /* ============ CARREIRA ============ */
-const CONTS=[['Chamalar','fogo','var(--fogo)'],['Selvaria','nat','var(--natureza)'],['Tormenália','raio','var(--raio)'],['Nereida','agua','var(--agua)']];
+const CONTS=[['Chamalar','fogo','var(--fogo)'],['Nereida','agua','var(--agua)'],['Selvaria','nat','var(--natureza)'],['Tormenália','raio','var(--raio)']];
 let carCont=0;
 function renderCarreira(){
-  document.getElementById('carSeg').innerHTML=CONTS.map((c,i)=>`<button class="${i===carCont?'on':''}" onclick="carCont=${i};renderCarreira()">${c[0]}</button>`).join('');
-  const col=CONTS[carCont][2],unlocked=carCont===0?4:carCont===1?1:0;
-  const stages=[['Sentinela da Fronteira',1],['Duelo no Vale',1],['Arena Menor',2],['Chefe: Guardião Elemental',3]];
-  document.getElementById('carPath').innerHTML=stages.map((s,i)=>{const lk=i>=unlocked;
-    return `<div class="panel stage${lk?' locked':''}" style="--el:${col}" ${lk?'':`onclick="startDuel()"`}>
-      <div class="num">${lk?'<svg style="width:18px;height:18px" class="ico"><use href="#i-lock"/></svg>':i+1}</div>
-      <div class="info"><b>${s[0]}</b><span>${lk?'Bloqueado':'Recompensa: '+(60+i*20)+' ouro'}</span></div>
-      <div class="st">${lk?'':i<unlocked-1?'<span class="pill" style="background:rgba(90,208,122,.15);color:var(--ok)">★★★</span>':'<svg class="ico" style="width:20px;height:20px;color:'+col+'"><use href="#i-play"/></svg>'}</div></div>`;}).join('');
+  document.getElementById('carSeg').innerHTML=CONTS.map(function(c,i){return '<button class="'+(i===carCont?'on':'')+'" onclick="carCont='+i+';renderCarreira()">'+c[0]+'</button>';}).join('');
+  var cont=CONTS[carCont],elem=cont[1],col=cont[2];
+  var done=(online&&career&&career[elem])||0;
+  var cards=DECKI.map(function(c,i){return {c:c,i:i};}).filter(function(x){return x.c.el===elem;}).slice(0,11);
+  var hint=online?'':'<div class="panel" style="text-align:center;padding:12px;color:var(--silver);margin-bottom:8px">Entre na sua conta para guardar o progresso da Carreira.</div>';
+  document.getElementById('carPath').innerHTML=hint+cards.map(function(x,i){
+    var c=x.c,cleared=i<done,current=i===done,boss=i===10;
+    var right=cleared?'<span class="pill" style="background:rgba(90,208,122,.15);color:var(--ok)">Feito</span>'
+      :current?'<button class="btn gold sm" onclick="startDuel(\''+elem+'\')"><svg class="ico"><use href="#i-play"/></svg> Batalhar</button>'
+      :'<svg class="ico" style="width:18px;height:18px;color:var(--silver-d)"><use href="#i-lock"/></svg>';
+    return '<div class="panel stage'+(current||cleared?'':' locked')+'" style="--el:'+col+'">'+
+      '<div class="num">'+(cleared?'✓':(current?(i+1):'<svg class="ico" style="width:15px;height:15px"><use href="#i-lock"/></svg>'))+'</div>'+
+      '<div class="info"><b>'+(boss?'Chefe · ':'')+c.nm+'</b><span>'+(cleared?'Conquistada':(current?'Vença pra ganhar esta carta + 25 ouro':'Bloqueado'))+'</span></div>'+
+      '<div class="st">'+right+'</div></div>';
+  }).join('');
 }
 
 /* ============ TORRE ============ */
@@ -824,7 +866,15 @@ function renderPerfil(){
       <div class="mid"><b style="color:${h[1]}">${h[0]}</b><span>${h[2]}</span></div><div class="rt"><b style="color:${h[1]}">${h[3]}</b><span style="color:var(--silver-d)">pts</span></div></div>`).join('');}
 
 /* ============ MISC ============ */
-function claimDaily(b){b.textContent='✓';b.disabled=true;const o=document.getElementById('ouro');o.textContent=(+o.textContent+50);toast('+50 de Ouro coletado!');}
+async function claimDaily(b){
+  if(online&&sb){
+    b.disabled=true;
+    var r=await sb.rpc('daily_claim');var d=r.data||{};
+    if(d.ok){if(profile)profile.ouro=d.ouro;var o=document.getElementById('ouro');if(o)o.textContent=d.ouro;b.textContent='✓';toast('+'+d.ganho+' Ouro · dia '+d.streak);}
+    else if(d.error==='ja_coletou'){b.textContent='✓';toast('Já coletou hoje');}
+    else{b.disabled=false;toast('Não deu pra coletar');}
+  } else { b.textContent='✓';b.disabled=true;var o=document.getElementById('ouro');o.textContent=(+o.textContent+50);toast('+50 de Ouro'); }
+}
 let toastT;function toast(msg){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:absolute;left:50%;bottom:96px;transform:translateX(-50%);z-index:30;background:linear-gradient(180deg,#22467e,#0e2247);border:1px solid var(--gold);color:var(--cream);font-family:Cinzel,serif;font-size:12px;letter-spacing:.05em;padding:10px 18px;border-radius:20px;box-shadow:0 8px 20px rgba(0,0,0,.5);opacity:0;transition:opacity .3s';document.getElementById('app').appendChild(t);}
   t.textContent=msg;t.style.opacity='1';clearTimeout(toastT);toastT=setTimeout(()=>t.style.opacity='0',1600);}
 
@@ -848,7 +898,7 @@ function go(id){
 const SB_URL='https://yixityvcnrdlffogbgnc.supabase.co';
 const SB_KEY='sb_publishable_HlsIBd5Px0tKzuEqMxpLWg_PeG-Cjh9';
 let sb=null; try{ if(window.supabase) sb=window.supabase.createClient(SB_URL,SB_KEY); }catch(e){}
-let online=false, profile=null, ownedSet=null;
+let online=false, profile=null, ownedSet=null, career={}, shopData=null;
 const SLUG2I={}; DECKI.forEach((c,i)=>SLUG2I[slug(c.nm)]=i);
 function owned(i){ return !online || !ownedSet || ownedSet.has(slug(DECKI[i].nm)); }
 function authMsg(t,ok){const el=document.getElementById('authMsg'); if(el){el.textContent=t||''; el.style.color=ok?'var(--ok)':'var(--danger)';}}
@@ -880,16 +930,14 @@ async function loadUserData(){
   try{
     const {data:{user}}=await sb.auth.getUser();
     if(!user){online=false;return;}
+    const rs=await sb.rpc('state_get');
+    if(rs.error||!rs.data||rs.data.error){online=false;return;}
     online=true;
-    const {data:prof}=await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();
-    profile=prof||{username:(user.email||'').split('@')[0],ouro:250,gemas:12};
-    const {data:col}=await sb.from('collection').select('card_slug');
-    ownedSet=new Set((col||[]).map(r=>r.card_slug));
-    const {data:dk}=await sb.from('decks').select('cartas').eq('ativo',true).order('updated_at',{ascending:false}).limit(1);
-    if(dk&&dk[0]&&dk[0].cartas&&dk[0].cartas.length){
-      const idx=dk[0].cartas.map(s=>SLUG2I[s]).filter(x=>x!==undefined);
-      if(idx.length) deck=idx;
-    }
+    const st=rs.data;
+    profile=st.perfil||{username:(user.email||'').split('@')[0],ouro:250,gemas:12,essencia:0};
+    ownedSet=new Set((st.colecao||[]).map(r=>r.slug));
+    career=st.carreira||{};
+    if(st.deck&&st.deck.length){const idx=st.deck.map(s=>SLUG2I[s]).filter(x=>x!==undefined);if(idx.length)deck=idx;}
     applyProfile();
   }catch(e){ online=false; }
 }
@@ -899,6 +947,7 @@ function applyProfile(){
   if(online&&profile){
     const o=document.getElementById('ouro'); if(o&&profile.ouro!=null)o.textContent=profile.ouro;
     const g=document.getElementById('ess'); if(g&&profile.gemas!=null)g.textContent=profile.gemas;
+    const et=document.getElementById('essTotal'); if(et&&profile.essencia!=null)et.textContent=profile.essencia;
   }
 }
 async function saveDeck(){

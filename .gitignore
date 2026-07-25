@@ -15,7 +15,10 @@ d-*.png
 t-*.png
 shot*.png
 v-*.png
-t-*.png
+m-*.png
+v0*-*.png
+e-*.png
+g-*.png
 
 # node / os
 node_modules/

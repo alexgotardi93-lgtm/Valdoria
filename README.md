@@ -2,15 +2,19 @@
 
 MMORPG casual de navegador — jogo de cartas de gladiadores em mundo de fantasia medieval, com 4 elementos (Fogo, Água, Natureza, Raio), progressão, rankings e duelos entre jogadores. **Mobile-first / retrato (celular em pé).**
 
-## Estado — v0.8
+## Estado — v0.9
 
-Jogo completo de ponta a ponta: conta real, coleção, deck, economia, Carreira e **Arena ranqueada com PvP assíncrono**. Tudo que vale ouro ou pontos é decidido no banco, não no JavaScript — o repositório é público de propósito e o cliente é tratado como não confiável.
+Jogo completo de ponta a ponta: conta real, coleção, deck, economia, Carreira, **Arena ranqueada com PvP assíncrono** e **missões diárias**. Tudo que vale ouro ou pontos é decidido no banco, não no JavaScript — o repositório é público de propósito e o cliente é tratado como não confiável.
 
-O que dá pra fazer hoje: criar conta e receber um pacote de introdução com 10 cartas e um deck legal de 8, montar deck respeitando o limite de 20★, duelar na Carreira, comprar na loja diária, forjar cartas com essência, e subir de liga na Arena enfrentando o deck de outro jogador. Bronze → Prata → Ouro → Platina → Diamante → Lenda.
+O que dá pra fazer hoje: criar conta e receber um pacote de introdução com 10 cartas e um deck legal de 8, montar deck respeitando o limite de 20★, duelar na Carreira, comprar na loja diária, forjar cartas com essência, cumprir três missões novas por dia e subir de liga na Arena enfrentando o deck de outro jogador. Bronze → Prata → Ouro → Platina → Diamante → Lenda.
+
+**Novidade da v0.9:** o painel *Missões do Dia* na tela inicial, com contagem regressiva para a virada e um ponto dourado no menu quando há recompensa esperando.
 
 ## Como rodar
 
 Abra `index.html` no navegador — `supabase.js`, `imgdata.js` e `bgdata.js` precisam estar ao lado. Para uma versão de arquivo único (bom pra mandar por e-mail ou abrir offline), rode `python3 build/build_standalone.py`.
+
+Os testes usam Playwright e rodam direto da raiz do repositório: `node test/misstest.js`, `node test/arenatest.js`, `node test/fxtest.js`.
 
 ## Estrutura
 
@@ -21,8 +25,8 @@ imgdata.js              52 cartas em base64 (320px JPEG)
 bgdata.js               4 cenários em base64 (splash, home, mapa, duelo)
 assets/bg-orig/         PNGs originais dos cenários (alta resolução)
 build/                  gera imgdata.js / bgdata.js / o arquivo único
-test/                   testes Playwright (telas, duelo, efeitos, Arena)
-supabase/migrations/    todo o schema, 0001 → 0009
+test/                   testes Playwright (telas, duelo, efeitos, Arena, missões)
+supabase/migrations/    todo o schema, 0001 → 0010
 ```
 
 ## Regras do duelo
@@ -39,10 +43,26 @@ Pontos por partida: vitória rende **+15 a +35**, derrota custa **−7 a −23**
 
 **Limitação conhecida:** dá pra fugir de uma derrota saindo da tela no meio do duelo — a linha pendente só expira. O teto diário e o piso de 12 segundos limitam o estrago; a correção de verdade exige o servidor saber que o duelo começou, e isso é o marco do PvP em tempo real.
 
+## Missões do Dia
+
+Três missões por dia — **uma do grupo base** (sempre alcançável só jogando) e **duas do grupo extra** —, mais um **bônus de 100 ouro e 2 gemas** por completar as três. Vira à meia-noite de Brasília.
+
+O catálogo tem 12 missões em `mission_defs`: terminar duelos, vencer duelos, vencer ou disputar na Arena, vencer na Carreira, comprar na loja, forjar uma carta, e vencer em cada uma das quatro regiões (Chamalar, Nereida, Selvaria, Tormenália). Pagam entre 50 e 160 de ouro, e algumas somam gema ou essência.
+
+**O sorteio é determinístico e não tem re-roll.** As três do dia saem de `md5(usuário ‖ dia ‖ slug)` — recarregar a página, sair e voltar, ou trocar de aparelho devolve exatamente as mesmas três. Ninguém pode ficar girando até tirar as missões mais fáceis.
+
+**O progresso nunca é reportado pelo cliente.** Não existe RPC de "marcar progresso". A contagem acontece dentro de `duel_reward`, `arena_result`, `shop_buy` e `forge_card`, sempre **depois** do UPDATE que já cobrou ou pagou — então nada conta num caminho que deu erro no meio. O JavaScript só sabe desenhar a barrinha e pedir o pagamento.
+
+Duas RPCs públicas: `missions_get()` devolve as três missões do dia com progresso, pagamento e quantos segundos faltam pra virada; `missions_claim(p_idx)` paga uma missão (índices 1–3) ou o bônus (índice 4), e recusa com `incompleta` ou `ja_pego`.
+
+**Ordem de trava:** todo caminho que mexe nas duas tabelas pega `profiles` **antes** de `missions` — inclusive `missions_claim`, que faz um `select … for update` em `profiles` antes de chamar `missoes_hoje`. Sem essa regra única, um jogador coletando missão enquanto termina um duelo poderia travar em deadlock.
+
+O dia das missões é o de Brasília (`dia_jogo()`), de propósito diferente do `current_date` em UTC que o teto de 100 duelos/dia usa. Missões são um subsistema fechado: só leem e escrevem a coluna `dia` delas, então os dois relógios não se atropelam.
+
 ## Stack
 
 - **Agora:** HTML5 + CSS + JS (vanilla), mobile-first, arquivo único.
-- **Backend:** Supabase (Postgres + Auth) — contas, coleção, ouro, deck, ranking, Arena.
+- **Backend:** Supabase (Postgres + Auth) — contas, coleção, ouro, deck, ranking, Arena, missões.
 - **Publicação (planejada):** empacotar com Capacitor → App Store (iOS) + Play Store (Android).
 
 ## Banco (Supabase)
@@ -60,6 +80,7 @@ Pontos por partida: vitória rende **+15 a +35**, derrota custa **−7 a −23**
 | `0007_arena_ranking_e_historico.sql` | Arena, pareamento, pontos, ranking e histórico de partidas |
 | `0008_username_e_grants_de_tabela.sql` | formato e unicidade do apelido; faxina nos GRANTs de tabela |
 | `0009_apelido_com_acento_e_grant_de_deck.sql` | apelido aceita acento; UPDATE de deck restrito por coluna |
+| `0010_missoes_diarias.sql` | missões diárias: catálogo, sorteio do dia, contagem nos pontos de pagamento |
 
 ### Modelo de permissões
 
@@ -71,9 +92,12 @@ O cliente é público, então o JavaScript **só desenha a tela**. Toda regra de
 | `collection` | ninguém pelo REST — só `grant_card` / `forge_card` / `shop_buy` |
 | `decks` | o dono, só as colunas `nome, cartas, ativo, updated_at`, e ainda passando pelo trigger `valida_deck()` |
 | `arena_pending` | ninguém — RLS ligado sem policy nenhuma, só funções `SECURITY DEFINER` encostam |
+| `missions` / `mission_defs` | idem: RLS sem policy, e nem SELECT o cliente tem |
 | ouro / gemas / essência / rank | só funções `SECURITY DEFINER` |
 
-**API pública (9 RPCs, só `authenticated`):** `state_get`, `daily_claim`, `duel_reward`, `shop_get`, `shop_buy`, `forge_card`, `arena_find`, `arena_result`, `ranking_top`.
+**API pública (11 RPCs, só `authenticated`):** `state_get`, `daily_claim`, `duel_reward`, `shop_get`, `shop_buy`, `forge_card`, `arena_find`, `arena_result`, `ranking_top`, `missions_get`, `missions_claim`.
+
+As auxiliares (`dia_jogo`, `missoes_do_dia`, `missoes_hoje`, `missao_prog`, `liga`, `preco_loja`, `custo_forja`, …) **não** são `SECURITY DEFINER` e não têm EXECUTE pra ninguém: rodam com o direito de quem as chamou e são inalcançáveis pelo REST.
 
 **Duas pegadinhas do Postgres que custaram caro aqui:**
 

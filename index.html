@@ -123,6 +123,28 @@ img{max-width:100%;display:block}
 .daily .box{width:46px;height:46px;border-radius:10px;display:grid;place-items:center;flex:0 0 auto;background:linear-gradient(180deg,#f0c766,#c98a25);box-shadow:0 0 14px rgba(230,178,77,.4)}
 .daily .box .ico{width:26px;height:26px}
 .daily .tx{flex:1}.daily .tx b{font-family:"Cinzel",serif;color:var(--cream);font-size:14px;display:block}.daily .tx span{font-size:12px;color:var(--silver-d)}
+.miss{display:flex;align-items:center;gap:11px;padding:11px 13px;margin-bottom:9px}
+.miss .mi{width:38px;height:38px;border-radius:9px;display:grid;place-items:center;flex:0 0 auto;background:linear-gradient(180deg,#2a4c86,#14264d);border:1px solid var(--line)}
+.miss .mi .ico{width:20px;height:20px;color:var(--gold-l)}
+.miss.done .mi{background:linear-gradient(180deg,#f0c766,#c98a25);border-color:var(--gold)}
+.miss.done .mi .ico{color:#2a1806}
+.miss.bonus .mi{background:linear-gradient(180deg,#caa0ff,#6a3fb0);border-color:#caa0ff}
+.miss.bonus .mi .ico{color:#22103f}
+.miss .mtx{flex:1;min-width:0}
+.miss .mtx b{font-family:"Cinzel",serif;color:var(--cream);font-size:13px;display:block;line-height:1.3}
+.miss .mtx i{font-style:normal;font-size:11px;color:var(--silver-d);display:block;margin:1px 0 6px}
+.miss .mbar{height:7px;border-radius:4px;background:rgba(6,12,26,.85);border:1px solid var(--line);overflow:hidden}
+.miss .mbar u{display:block;height:100%;text-decoration:none;background:linear-gradient(90deg,#f0c766,#c98a25);transition:width .45s}
+.miss.done .mbar u{background:linear-gradient(90deg,#5ad07a,#2a8a52)}
+.miss .mrt{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.miss .pay{font-size:11px;color:var(--gold-l);white-space:nowrap;display:flex;align-items:center;gap:3px}
+.miss .pay .ico{width:12px;height:12px}
+.miss .pay em{font-style:normal;color:#9fd0ff;margin-left:5px}
+.miss .btn{padding:6px 12px;font-size:11px}
+.miss .tick{color:#5ad07a;font-size:15px;width:38px;text-align:center}
+.navb{position:relative}
+.navb .dot{position:absolute;top:6px;right:calc(50% - 17px);width:8px;height:8px;border-radius:50%;background:var(--gold-l);box-shadow:0 0 8px var(--gold);display:none}
+.navb.has-dot .dot{display:block}
 /* MAP */
 .map-wrap{position:relative;width:100%;aspect-ratio:1/1;max-width:400px;margin:6px auto 0}
 .map-line{position:absolute;inset:0;z-index:0}
@@ -351,6 +373,8 @@ img{max-width:100%;display:block}
       <button class="tile" onclick="go('shop')"><div class="glow" style="background:var(--gold)"></div><svg class="ico" style="color:var(--gold-l)"><use href="#i-coin"/></svg><div><div class="nm">Loja</div><div class="ds">Abra packs</div></div></button>
       <button class="tile" onclick="go('clan')"><div class="glow" style="background:var(--agua)"></div><svg class="ico" style="color:#8fd8f0"><use href="#i-users"/></svg><div><div class="nm">Clã</div><div class="ds">Junte-se</div></div></button>
     </div>
+    <div class="sect-h"><h3>Missões do Dia</h3><span class="more" id="missTime"></span></div>
+    <div id="missList"></div>
     <div class="sect-h"><h3>Recompensa Diária</h3></div>
     <div class="panel daily"><span class="corner tl"></span><span class="corner br"></span>
       <div class="box"><svg class="ico" style="color:#2a1806"><use href="#i-coin"/></svg></div>
@@ -539,7 +563,7 @@ img{max-width:100%;display:block}
 
   <!-- BOTTOM NAV -->
   <nav class="bottomnav hidden" id="bottomnav">
-    <button class="navb" data-scr="home" onclick="go('home')"><svg class="ico"><use href="#i-home"/></svg>Início</button>
+    <button class="navb" data-scr="home" onclick="go('home')"><i class="dot"></i><svg class="ico"><use href="#i-home"/></svg>Início</button>
     <button class="navb" data-scr="map" onclick="go('map')"><svg class="ico"><use href="#i-map"/></svg>Mapa</button>
     <button class="navb" data-scr="collection" onclick="go('collection')"><svg class="ico"><use href="#i-cards"/></svg>Cartas</button>
     <button class="navb" data-scr="shop" onclick="go('shop')"><svg class="ico"><use href="#i-coin"/></svg>Loja</button>
@@ -976,6 +1000,7 @@ function endDuel(){
                   profile.vitorias=d.vitorias;profile.derrotas=d.derrotas;}applyProfile();
       var o=document.getElementById('ouro');if(o)o.textContent=d.ouro;
       setOv((d.pts>0?'+':'')+d.pts+' pts · +'+d.ganho+' Ouro');
+      renderMissions();
     });
     return;
   }
@@ -987,6 +1012,7 @@ function endDuel(){
       var d=r.data;if(!d||!d.ok)return;
       if(profile)profile.ouro=d.ouro;
       var o=document.getElementById('ouro');if(o)o.textContent=d.ouro;
+      renderMissions();
       if(d.slug){
         ownedSet.add(d.slug);if(ce)career[ce]=d.estagio;
         var nm=(SLUG2I[d.slug]!=null)?DECKI[SLUG2I[d.slug]].nm:'carta';
@@ -1019,7 +1045,7 @@ function renderShopCards(){
 async function buyShop(sl){
   if(!online||!sb)return;
   var r=await sb.rpc('shop_buy',{p_slug:sl});var d=r.data||{};
-  if(d.ok){if(profile){profile.ouro=d.ouro;profile.essencia=d.essencia;}ownedSet.add(sl);applyProfile();var cc=(shopData.cartas||[]).find(function(x){return x.slug===sl;});if(cc)cc.comprado=true;renderShopCards();renderForge();toast('Carta comprada!');}
+  if(d.ok){if(profile){profile.ouro=d.ouro;profile.essencia=d.essencia;}ownedSet.add(sl);applyProfile();var cc=(shopData.cartas||[]).find(function(x){return x.slug===sl;});if(cc)cc.comprado=true;renderShopCards();renderForge();renderMissions();toast('Carta comprada!');}
   else if(d.error==='sem_ouro')toast('Ouro insuficiente ('+d.preco+')');
   else if(d.error==='ja_comprado')toast('Já comprada hoje');
   else toast('Não deu pra comprar');
@@ -1041,7 +1067,7 @@ function renderForge(){
 async function forgeCard(sl){
   if(!online||!sb)return;
   var r=await sb.rpc('forge_card',{p_slug:sl});var d=r.data||{};
-  if(d.ok){if(profile)profile.essencia=d.essencia;ownedSet.add(sl);applyProfile();renderForge();toast('Carta forjada!');}
+  if(d.ok){if(profile)profile.essencia=d.essencia;ownedSet.add(sl);applyProfile();renderForge();renderMissions();toast('Carta forjada!');}
   else if(d.error==='sem_essencia')toast('Essência insuficiente ('+d.custo+')');
   else if(d.error==='ja_possui')toast('Você já tem essa carta');
   else toast('Não deu pra forjar');
@@ -1229,9 +1255,100 @@ async function claimDaily(b){
 let toastT;function toast(msg){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:absolute;left:50%;bottom:96px;transform:translateX(-50%);z-index:30;background:linear-gradient(180deg,#22467e,#0e2247);border:1px solid var(--gold);color:var(--cream);font-family:Cinzel,serif;font-size:12px;letter-spacing:.05em;padding:10px 18px;border-radius:20px;box-shadow:0 8px 20px rgba(0,0,0,.5);opacity:0;transition:opacity .3s';document.getElementById('app').appendChild(t);}
   t.textContent=msg;t.style.opacity='1';clearTimeout(toastT);toastT=setTimeout(()=>t.style.opacity='0',1600);}
 
+/* ============ MISSÕES DO DIA ============ */
+/* O progresso e contado no banco, dentro de duel_reward / arena_result /
+   shop_buy / forge_card. Aqui so se desenha e se pede o pagamento. */
+const MISSICO={areia:'i-sword',sangue:'i-crown',honra:'i-trophy',escalada:'i-trophy',
+  veterano:'i-shield',conquista:'i-flag',feira:'i-coin',bigorna:'i-gem',
+  brasa:'i-flame',mare:'i-drop',raiz:'i-leaf',trovao:'i-bolt'};
+let missData=null,missEnd=0,missT=null;
+
+function navDot(n){
+  const b=document.querySelector('.navb[data-scr="home"]');
+  if(b)b.classList.toggle('has-dot',n>0);
+}
+function missClock(){
+  const el=document.getElementById('missTime');if(!el)return;
+  if(!missEnd||!(online&&sb)){el.textContent='';return;}
+  const s=Math.max(0,Math.round((missEnd-Date.now())/1000));
+  const hh=Math.floor(s/3600),mm=Math.floor((s%3600)/60);
+  el.textContent='renova em '+(hh?hh+'h '+mm+'m':(mm||1)+'m');
+  if(s<=0){missEnd=0;renderMissions();}
+}
+function missPay(o,g,e){
+  return '<div class="pay"><svg class="ico"><use href="#i-coin"/></svg>'+o
+    +(g?'<em>+'+g+(g>1?' gemas':' gema')+'</em>':'')
+    +(e?'<em>+'+e+' ess</em>':'')+'</div>';
+}
+function missRow(cls,ico,tit,sub,pc,pay,pego,pronta,idx){
+  return '<div class="panel miss'+cls+'"><span class="corner tl"></span><span class="corner br"></span>'
+    +'<div class="mi"><svg class="ico"><use href="#'+ico+'"/></svg></div>'
+    +'<div class="mtx"><b>'+tit+'</b><i>'+sub+'</i>'
+    +'<div class="mbar"><u style="width:'+pc+'%"></u></div></div>'
+    +'<div class="mrt">'+pay
+    +(pego?'<span class="tick">✓</span>'
+          :'<button class="btn gold sm"'+(pronta?'':' disabled')
+           +' onclick="claimMission('+idx+',this)">Coletar</button>')
+    +'</div></div>';
+}
+function drawMissions(){
+  const box=document.getElementById('missList');if(!box)return;
+  const d=missData;if(!d){box.innerHTML='';return;}
+  let h='',feitas=0;
+  (d.missoes||[]).forEach(function(m){
+    const p=Math.min(m.prog,m.alvo),pc=Math.round(100*p/m.alvo);
+    if(m.pego)feitas++;
+    h+=missRow(p>=m.alvo?' done':'',MISSICO[m.slug]||'i-sword',m.titulo,
+       m.descr+' · '+p+'/'+m.alvo,pc,missPay(m.ouro,m.gemas,m.essencia),
+       m.pego,m.pronta,m.i);
+  });
+  h+=missRow(' bonus'+(d.bonus_pego?' done':''),'i-star','Bônus do Dia',
+     'Complete as três missões · '+feitas+'/3',Math.round(100*feitas/3),
+     missPay(d.bonus_ouro,d.bonus_gemas,0),d.bonus_pego,d.bonus_pronto,4);
+  box.innerHTML=h;
+  navDot((d.prontas||0)+(d.bonus_pronto?1:0));
+  missClock();
+}
+async function renderMissions(){
+  const box=document.getElementById('missList');if(!box)return;
+  if(!(online&&sb)){
+    missData=null;missEnd=0;navDot(0);
+    const el=document.getElementById('missTime');if(el)el.textContent='';
+    box.innerHTML='<div class="panel miss"><span class="corner tl"></span><span class="corner br"></span>'
+      +'<div class="mi"><svg class="ico"><use href="#i-lock"/></svg></div>'
+      +'<div class="mtx"><b>Só para quem tem conta</b>'
+      +'<i>Três missões novas todo dia, pagas em ouro, gemas e essência.</i></div></div>';
+    return;
+  }
+  if(!missT)missT=setInterval(missClock,20000);
+  try{
+    const r=await sb.rpc('missions_get');const d=(r&&r.data)||{};
+    if(!d.ok)return;
+    missData=d;missEnd=Date.now()+((d.renova_em||0)*1000);
+    drawMissions();
+  }catch(e){}
+}
+async function claimMission(i,b){
+  if(!(online&&sb))return;
+  b.disabled=true;
+  const r=await sb.rpc('missions_claim',{p_idx:i});const d=(r&&r.data)||{};
+  if(d.ok){
+    if(profile){profile.ouro=d.ouro;profile.gemas=d.gemas;profile.essencia=d.essencia;}
+    applyProfile();
+    let t='+'+d.ganho_ouro+' Ouro';
+    if(d.ganho_gemas)t+=' · +'+d.ganho_gemas+(d.ganho_gemas>1?' Gemas':' Gema');
+    if(d.ganho_essencia)t+=' · +'+d.ganho_essencia+' Essência';
+    toast(t);renderMissions();
+  }else{
+    b.disabled=false;
+    toast(d.error==='incompleta'||d.error==='incompleto'?'Missão ainda não concluída'
+         :d.error==='ja_pego'?'Já coletou essa':'Não deu pra coletar');
+  }
+}
+
 /* ============ ROTEADOR ============ */
 const NAV=['home','map','collection','shop','ranking'];
-const INIT={collection:()=>{renderChips();renderCollection();},deck:renderDeck,shop:renderShop,carreira:renderCarreira,torre:renderTorre,arena:arenaEnter,ranking:renderRank,clan:renderClan,perfil:renderPerfil};
+const INIT={home:renderMissions,collection:()=>{renderChips();renderCollection();},deck:renderDeck,shop:renderShop,carreira:renderCarreira,torre:renderTorre,arena:arenaEnter,ranking:renderRank,clan:renderClan,perfil:renderPerfil};
 function go(id){
   if(id==='duel'&&!duel){return startDuel();}
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));

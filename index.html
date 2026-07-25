@@ -519,7 +519,7 @@ img{max-width:100%;display:block}
     <div class="sect-h"><h3>Conta</h3></div>
     <div class="panel opt"><div class="lb">Gladiador<span>convidado@valdoria</span></div><span style="color:var(--gold-l);font-size:12px">Gerenciar</span></div>
     <button class="btn danger block" style="margin-top:14px" onclick="doLogout()">Sair da conta</button>
-    <p class="hint">Valdória v0.2 · Arena de Gladiadores · feito com ❤ e brasas</p>
+    <p class="hint">Valdória v0.7 · Arena de Gladiadores · feito com ❤ e brasas</p>
     <div class="spacer"></div>
   </section>
 
@@ -934,8 +934,19 @@ function endDuel(){
     '<button class="btn ghost sm" onclick="startDuel()">Jogar de novo</button>';
   ov.classList.add('show');dm('');
   if(online&&sb){
-    sb.rpc('duel_reward',{p_win:win}).then(function(r){if(r.data&&r.data.ok){if(profile)profile.ouro=r.data.ouro;var o=document.getElementById('ouro');if(o)o.textContent=r.data.ouro;}});
-    if(win&&duel.careerElem){var ce=duel.careerElem;sb.rpc('career_claim',{p_elem:ce}).then(function(r){if(r.data&&r.data.ok){ownedSet.add(r.data.slug);career[ce]=r.data.estagio;if(profile)profile.ouro=r.data.ouro;var o=document.getElementById('ouro');if(o)o.textContent=r.data.ouro;var nm=(SLUG2I[r.data.slug]!=null)?DECKI[SLUG2I[r.data.slug]].nm:'carta';toast('Recompensa: '+nm+'!');}});}
+    /* uma chamada so: o servidor paga o ouro e, se for Carreira vencida,
+       entrega o estagio no mesmo passo (evita corrida entre duas RPCs) */
+    var ce=(win&&duel.careerElem)?duel.careerElem:null;
+    sb.rpc('duel_reward',{p_win:win,p_elem:ce}).then(function(r){
+      var d=r.data;if(!d||!d.ok)return;
+      if(profile)profile.ouro=d.ouro;
+      var o=document.getElementById('ouro');if(o)o.textContent=d.ouro;
+      if(d.slug){
+        ownedSet.add(d.slug);if(ce)career[ce]=d.estagio;
+        var nm=(SLUG2I[d.slug]!=null)?DECKI[SLUG2I[d.slug]].nm:'carta';
+        toast('Recompensa: '+nm+'!');
+      }
+    });
   } else if(win){const o=document.getElementById('ouro');o.textContent=(+o.textContent+30);}
 }
 

@@ -314,7 +314,7 @@ img{max-width:100%;display:block}
 
   <header class="topbar hidden" id="topbar">
     <button class="crest" onclick="go('perfil')"><svg class="ico" style="width:20px;height:20px;color:var(--gold-l)"><use href="#i-flame"/></svg></button>
-    <div class="who"><div class="nm">Gladiador</div><div class="rk">Bronze III · Nível 1</div></div>
+    <div class="who"><div class="nm">Gladiador</div><div class="rk" id="topRk">Bronze · Nível 1</div></div>
     <div class="res"><svg class="ico" style="color:var(--gold-l)"><use href="#i-coin"/></svg><span id="ouro">250</span></div>
     <div class="res"><svg class="ico" style="color:#9fd0ff"><use href="#i-gem"/></svg><span id="ess">12</span></div>
     <button class="gearbtn" onclick="go('config')"><svg class="ico" style="color:var(--silver)"><use href="#i-gear"/></svg></button>
@@ -341,10 +341,10 @@ img{max-width:100%;display:block}
   <!-- HOME -->
   <section class="screen has-top has-nav" id="s-home">
     <div class="hero"><div class="kicker">Ilha de Batalha</div><h1>Bem-vindo, Gladiador</h1><p>Sua próxima vitória aguarda na arena.</p>
-      <button class="btn gold big play" onclick="startDuel()"><svg class="ico"><use href="#i-sword"/></svg> Duelar agora</button></div>
+      <button class="btn gold big play" onclick="go('arena')"><svg class="ico"><use href="#i-sword"/></svg> Duelar agora</button></div>
     <div class="sect-h"><h3>Modos de Jogo</h3></div>
     <div class="grid2">
-      <button class="tile" onclick="startDuel()"><div class="glow" style="background:var(--rara)"></div><svg class="ico" style="color:#9fd0ff"><use href="#i-sword"/></svg><div><div class="nm">PvP Ranqueado</div><div class="ds">Suba no ranking</div></div></button>
+      <button class="tile" onclick="go('arena')"><div class="glow" style="background:var(--rara)"></div><svg class="ico" style="color:#9fd0ff"><use href="#i-sword"/></svg><div><div class="nm">Arena Ranqueada</div><div class="ds">Duelos por pontos</div></div></button>
       <button class="tile" onclick="go('carreira')"><div class="glow" style="background:var(--fogo)"></div><svg class="ico" style="color:var(--gold-l)"><use href="#i-flag"/></svg><div><div class="nm">Carreira</div><div class="ds">4 continentes</div></div></button>
       <button class="tile" onclick="go('torre')"><div class="glow" style="background:var(--epica)"></div><svg class="ico" style="color:#caa0ff"><use href="#i-tower"/></svg><div><div class="nm">Torre Infinita</div><div class="ds">Suba andares</div></div></button>
       <button class="tile" onclick="go('collection')"><div class="glow" style="background:var(--natureza)"></div><svg class="ico" style="color:#8fe0a0"><use href="#i-cards"/></svg><div><div class="nm">Coleção</div><div class="ds">52 cartas · Deck</div></div></button>
@@ -405,7 +405,7 @@ img{max-width:100%;display:block}
     <a class="back" onclick="go('home')"><svg class="ico"><use href="#i-back"/></svg> Sair do duelo</a>
     <div class="pg-title">Duelo</div>
     <div class="panel duel-side"><div class="crest" style="width:34px;height:34px;border-color:var(--danger)"><svg class="ico" style="width:17px;height:17px;color:var(--danger)"><use href="#i-shield"/></svg></div>
-      <div class="vida"><div class="lab"><b>Adversário</b><span id="foeHp">20 / 20</span></div><div class="bar foe"><span id="foeBar" style="width:100%"></span></div></div></div>
+      <div class="vida"><div class="lab"><b id="foeName">Adversário</b><span id="foeHp">20 / 20</span></div><div class="bar foe"><span id="foeBar" style="width:100%"></span></div></div></div>
     <div class="rounds" id="roundTrack"></div>
     <div class="turn-timer" id="turnTimer"><i id="turnFill"></i><b id="turnSecs">10</b></div>
     <div style="position:relative">
@@ -465,12 +465,23 @@ img{max-width:100%;display:block}
     <div class="spacer"></div>
   </section>
 
+  <!-- ARENA -->
+  <section class="screen has-top has-nav" id="s-arena">
+    <div class="pg-title">Arena Ranqueada</div>
+    <div class="panel pad" style="text-align:center;margin-bottom:12px"><span class="corner tl"></span><span class="corner br"></span>
+      <div class="tag" id="arMinhaLiga">Bronze</div>
+      <div style="font-family:'Cinzel Decorative',serif;font-size:42px;color:var(--gold-l);line-height:1;margin:9px 0 2px" id="arMeusPts">0</div>
+      <div style="font-size:12px;color:var(--silver-d)">pontos de ranking · <a onclick="go('ranking')" style="color:var(--gold-l);cursor:pointer">ver classificação</a></div></div>
+    <div class="sect-h"><h3>Seu adversário</h3></div>
+    <div id="arBox"></div>
+    <p class="hint">Você enfrenta o deck salvo de outro gladiador, jogado pela IA. Vencer quem está acima de você vale mais pontos.</p>
+    <div class="spacer"></div>
+  </section>
+
   <!-- RANKING -->
   <section class="screen has-top has-nav" id="s-ranking">
     <div class="pg-title">Ranking</div>
-    <div class="panel row-item" style="margin-bottom:14px;border-color:var(--gold)"><span class="corner tl"></span><span class="corner br"></span>
-      <div class="rk" style="color:var(--silver)">#238</div><div class="av"><svg class="ico" style="color:var(--gold-l)"><use href="#i-flame"/></svg></div>
-      <div class="mid"><b>Você (Gladiador)</b><span>Bronze III · 1.020 pts</span></div><div class="rt"><b>+0</b><span style="color:var(--silver-d)">hoje</span></div></div>
+    <div id="rankMe"></div>
     <div class="sect-h"><h3>Top Gladiadores</h3></div>
     <div id="rankList"></div>
     <div class="spacer"></div>
@@ -495,9 +506,9 @@ img{max-width:100%;display:block}
   <section class="screen has-top has-nav" id="s-perfil">
     <div class="panel pad" style="text-align:center;margin-bottom:14px"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
       <div class="crest" style="width:74px;height:74px;margin:0 auto 8px;border-color:var(--gold)"><svg class="ico" style="width:38px;height:38px;color:var(--gold-l)"><use href="#i-flame"/></svg></div>
-      <div style="font-family:'Cinzel',serif;font-size:20px;color:var(--cream)">Gladiador</div>
-      <div style="font-size:12px;color:var(--silver-d)">Bronze III · Nível 1 · Chamalar</div></div>
-    <div class="pstat-grid"><div class="pstat"><b>14</b><span>Vitórias</span></div><div class="pstat"><b>58%</b><span>Winrate</span></div><div class="pstat"><b>29</b><span>Cartas</span></div></div>
+      <div style="font-family:'Cinzel',serif;font-size:20px;color:var(--cream)" id="perfNome">Gladiador</div>
+      <div style="font-size:12px;color:var(--silver-d)" id="perfSub">Bronze · Nível 1</div></div>
+    <div class="pstat-grid"><div class="pstat"><b id="perfVit">0</b><span>Vitórias</span></div><div class="pstat"><b id="perfWr">0%</b><span>Winrate</span></div><div class="pstat"><b id="perfCartas">0</b><span>Cartas</span></div></div>
     <div class="sect-h"><h3>Conquistas</h3></div>
     <div class="badges" id="badges"></div>
     <div class="sect-h"><h3>Últimos duelos</h3></div>
@@ -519,7 +530,7 @@ img{max-width:100%;display:block}
     <div class="sect-h"><h3>Conta</h3></div>
     <div class="panel opt"><div class="lb">Gladiador<span>convidado@valdoria</span></div><span style="color:var(--gold-l);font-size:12px">Gerenciar</span></div>
     <button class="btn danger block" style="margin-top:14px" onclick="doLogout()">Sair da conta</button>
-    <p class="hint">Valdória v0.7 · Arena de Gladiadores · feito com ❤ e brasas</p>
+    <p class="hint">Valdória v0.8 · Arena de Gladiadores · feito com ❤ e brasas</p>
     <div class="spacer"></div>
   </section>
 
@@ -645,15 +656,25 @@ function buildFoeDeck(elem,stage){
   }
   return pool.slice().sort(function(a,b){return a.st-b.st;}).slice(0,8);
 }
-function startDuel(careerElem){
+function startDuel(careerElem, ar){
   const myDeck=(deck.length===8?deck:[0,1,10,15,26,32,39,45]).map(i=>DECKI[i]);
   const shuffled=[...myDeck].sort(()=>Math.random()-.5);
   const stage=careerElem?((online&&career&&career[careerElem])||0):null;
-  const foeDeck=buildFoeDeck(careerElem||null,stage).sort(()=>Math.random()-.5);
+  /* Arena: o adversario e o deck salvo de outro jogador. Quando o pareamento
+     caiu num gladiador da guilda (PNJ) nao vem deck, entao montamos um do
+     elemento dele com a mesma regra de 8 cartas / 20 estrelas. */
+  let foeDeck;
+  if(ar&&ar.cartas&&ar.cartas.length===8) foeDeck=ar.cartas.map(i=>DECKI[i]);
+  else foeDeck=buildFoeDeck((ar?ar.elem:careerElem)||null, ar?null:stage);
+  foeDeck=foeDeck.slice().sort(()=>Math.random()-.5);
   duel={you:20,foe:20,round:0,hand:shuffled.slice(0,4),foeHand:foeDeck.slice(0,4),
     myRest:shuffled.slice(4),foeRest:foeDeck.slice(4),sudden:false,
-    starter:null,phase:'atk',attacker:'you',atkCard:null,defCard:null,waiting:null,tick:null,toEnd:null,foeThink:null,careerElem:careerElem||null};
-  go('duel');renderDuel();resetSlots();dm('');coinFlip();
+    starter:null,phase:'atk',attacker:'you',atkCard:null,defCard:null,waiting:null,tick:null,toEnd:null,foeThink:null,
+    careerElem:careerElem||null,arena:ar||null};
+  go('duel');
+  const fn=document.getElementById('foeName');
+  if(fn)fn.textContent=ar?ar.nome:'Adversário';
+  renderDuel();resetSlots();dm('');coinFlip();
 }
 function renderDuel(){
   document.getElementById('foeHp').textContent=Math.max(0,duel.foe)+' / 20';
@@ -923,20 +944,45 @@ function bestDefIdx(hand,atkC,aHand,myHp,foeHp){
 function endDuel(){
   clearTimer();renderDuel();
   const win=duel.you>duel.foe,draw=duel.you===duel.foe;
+  /* guarda antes de qualquer await: sair da tela zera o duel */
+  const ar=duel.arena, ce=(win&&duel.careerElem)?duel.careerElem:null;
   const ov=document.getElementById('resultOv');
   const title=draw?'EMPATE':(win?'VITÓRIA':'DERROTA');
   const sub=duel.sudden?'<div style="color:var(--silver-d);font-size:11.5px;margin-top:2px">decidido na morte súbita</div>':'';
   const col=draw?'var(--silver-l)':(win?'var(--gold-l)':'var(--danger)');
+  const prem=ar?(draw?'Empate — nenhum ponto trocado':'apurando…'):(win?'+30 Ouro':'');
   ov.innerHTML='<div class="rt" style="color:'+col+'">'+title+'</div>'+
     '<div style="color:var(--silver);font-size:13px">Vida final '+Math.max(0,duel.you)+' × '+Math.max(0,duel.foe)+'</div>'+sub+
-    (win?'<div style="color:var(--gold-l);font-size:13px;margin-top:4px">+30 Ouro · +25 pts</div>':'')+
-    '<button class="btn gold sm" style="margin-top:12px" onclick="go(\'home\')">Voltar à Ilha</button>'+
-    '<button class="btn ghost sm" onclick="startDuel()">Jogar de novo</button>';
+    '<div id="ovPts" style="color:var(--gold-l);font-size:13px;margin-top:4px;min-height:16px">'+prem+'</div>'+
+    (ar?'<button class="btn gold sm" style="margin-top:10px" onclick="go(\'arena\')">Voltar à Arena</button>'
+       :'<button class="btn gold sm" style="margin-top:10px" onclick="go(\'home\')">Voltar à Ilha</button>')+
+    (ar?'<button class="btn ghost sm" onclick="arenaAgain()">Outro adversário</button>'
+       :'<button class="btn ghost sm" onclick="startDuel()">Jogar de novo</button>');
   ov.classList.add('show');dm('');
+
+  if(ar){
+    arena=null;                       /* o proximo acesso a Arena procura de novo */
+    if(draw||ar.local||!(online&&sb)){ if(!draw)setOv(''); return; }
+    sb.rpc('arena_result',{p_win:win}).then(function(r){
+      var d=(r&&r.data)||{};
+      if(!d.ok){
+        setOv('');
+        toast(d.error==='muito_rapido'?'Duelo rápido demais para valer pontos'
+             :d.error==='expirado'?'O pareamento expirou — procure outro adversário'
+             :'Não deu pra registrar o duelo');
+        return;
+      }
+      if(profile){profile.ouro=d.ouro;profile.rank_pts=d.rank_pts;profile.liga=d.liga;
+                  profile.vitorias=d.vitorias;profile.derrotas=d.derrotas;}applyProfile();
+      var o=document.getElementById('ouro');if(o)o.textContent=d.ouro;
+      setOv((d.pts>0?'+':'')+d.pts+' pts · +'+d.ganho+' Ouro');
+    });
+    return;
+  }
+
   if(online&&sb){
     /* uma chamada so: o servidor paga o ouro e, se for Carreira vencida,
        entrega o estagio no mesmo passo (evita corrida entre duas RPCs) */
-    var ce=(win&&duel.careerElem)?duel.careerElem:null;
     sb.rpc('duel_reward',{p_win:win,p_elem:ce}).then(function(r){
       var d=r.data;if(!d||!d.ok)return;
       if(profile)profile.ouro=d.ouro;
@@ -1028,12 +1074,107 @@ function renderTorre(){document.getElementById('towerList').innerHTML=[8,9,10,11
   `<div class="panel floor"><div class="fl">${f}</div><div class="info"><b>Andar ${f}</b><span>Bot ${['Aprendiz','Veterano','Élite','Campeão','Lendário'][i]} · ${['Bronze','Prata','Prata','Ouro','Ouro'][i]}</span></div>
     <div class="rt" style="font-size:12px;color:var(--gold-l);display:flex;align-items:center;gap:4px"><svg class="ico" style="width:14px;height:14px"><use href="#i-coin"/></svg>${40+i*20}</div></div>`).join('');}
 
+/* ============ ARENA RANQUEADA (PvP assincrono) ============ */
+/* Nao ha socket: o adversario e o deck salvo de outro gladiador, jogado pela
+   mesma IA do duelo. Quem escolhe o par e o servidor (arena_find), que grava
+   a partida pendente; o arena_result so paga em cima dela. */
+let arena=null, arenaBusy=false;
+const LIGAC={Bronze:'var(--ember)',Prata:'var(--silver)',Ouro:'var(--gold)',
+             Platina:'var(--rara)',Diamante:'var(--epica)',Lenda:'var(--mitica)'};
+const PNJ=['Brasa Errante','Vigília de Ferro','Marechal Grisalho','Oráculo de Sal',
+           'Punho de Basalto','Vento Rachado','Lâmina Cinzenta','Guardião do Vau',
+           'Corvo de Bronze','Serpente de Névoa','Filho da Tempestade','Raiz Antiga'];
+const ESCM={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return ESCM[c];});}
+function setOv(t){var e=document.getElementById('ovPts');if(e)e.textContent=t||'';}
+function arenaBox(h){var b=document.getElementById('arBox');if(b)b.innerHTML=h;}
+function arenaHead(){
+  var l=document.getElementById('arMinhaLiga'),p=document.getElementById('arMeusPts');
+  if(l)l.textContent=(online&&profile&&profile.liga)||'Sem liga';
+  if(p)p.textContent=(online&&profile&&profile.rank_pts!=null)?profile.rank_pts:'—';
+}
+function arenaEnter(){ arenaHead(); if(!online||!sb||arena)renderArena(); else arenaFind(); }
+function renderArena(){
+  arenaHead();
+  if(!online||!sb){
+    arenaBox('<div class="panel pad" style="text-align:center"><span class="corner tl"></span><span class="corner br"></span>'+
+      '<div style="color:var(--silver);font-size:13px;line-height:1.5">A Arena vale pontos só com a conta ligada.<br>Como convidado dá pra treinar contra a guilda.</div>'+
+      '<button class="btn gold block" style="margin-top:12px" onclick="arenaGuest()"><svg class="ico"><use href="#i-sword"/></svg> Treinar com a guilda</button>'+
+      '<button class="btn ghost block" style="margin-top:8px" onclick="go(\'splash\')">Entrar na conta</button></div>');
+    return;
+  }
+  if(!arena){arenaBox('<div class="panel" style="text-align:center;padding:24px;color:var(--silver-d)">Procurando adversário…</div>');return;}
+  var e=EL[arena.elem]||EL.fogo, lc=LIGAC[arena.liga]||'var(--silver)';
+  arenaBox('<div class="panel pad"><span class="corner tl"></span><span class="corner br"></span>'+
+    '<div style="display:flex;align-items:center;gap:13px">'+
+      '<div class="crest" style="width:52px;height:52px;border-color:'+e.c+'"><svg class="ico" style="width:26px;height:26px;color:'+e.c+'"><use href="#'+e.i+'"/></svg></div>'+
+      '<div style="flex:1;min-width:0"><div style="font-family:Cinzel,serif;color:var(--cream);font-size:17px">'+esc(arena.nome)+
+        (arena.bot?' <span class="pill" style="background:rgba(195,204,223,.14);color:var(--silver-d)">guilda</span>':'')+'</div>'+
+      '<div style="font-size:12px;color:var(--silver-d)"><span class="pill" style="background:rgba(195,204,223,.12);color:'+lc+'">'+esc(arena.liga)+'</span> '+
+        arena.pts+' pts · '+e.nm+'</div></div></div>'+
+    '<div class="rule"></div>'+
+    '<div style="display:flex;gap:8px;align-items:center">'+
+      '<button class="btn gold" style="flex:1" onclick="arenaDuel()"><svg class="ico"><use href="#i-sword"/></svg> Duelar</button>'+
+      '<button class="btn ghost" onclick="arenaFind()">Outro</button></div></div>');
+}
+async function arenaFind(){
+  if(!online||!sb){renderArena();return;}
+  if(arenaBusy)return;
+  arenaBusy=true;arena=null;renderArena();
+  try{
+    var r=await sb.rpc('arena_find');
+    var d=(r&&r.data)||{};
+    if(!d.ok){
+      arenaBox('<div class="panel" style="text-align:center;padding:22px;color:var(--danger)">Não deu pra achar adversário agora.'+
+        '<br><button class="btn ghost sm" style="margin-top:10px" onclick="arenaFind()">Tentar de novo</button></div>');
+    }else{
+      arena={nome:d.nome,elem:d.elem||'fogo',pts:d.pts|0,liga:d.liga||'Bronze',bot:!!d.bot,
+             cartas:(d.cartas||[]).map(function(sl){return SLUG2I[sl];}).filter(function(x){return x!=null;})};
+      if(profile){profile.rank_pts=d.meus_pts;profile.liga=d.minha_liga;applyProfile();}
+      renderArena();
+    }
+  }catch(e){
+    arenaBox('<div class="panel" style="text-align:center;padding:22px;color:var(--danger)">Sem conexão com a Arena.</div>');
+  }
+  arenaBusy=false;
+}
+function arenaDuel(){ if(arena)startDuel(null,arena); }
+function arenaAgain(){ arena=null; go('arena'); }
+function arenaGuest(){
+  var els=['fogo','agua','nat','raio'];
+  startDuel(null,{nome:PNJ[Math.floor(Math.random()*PNJ.length)],elem:els[Math.floor(Math.random()*4)],
+                  pts:0,liga:'Bronze',bot:true,cartas:[],local:true});
+}
 /* ============ RANKING ============ */
-const RANKS=[['DragãoRubro','fogo',2840,'Mítico','var(--mitica)'],['NéreoAzul','agua',2610,'Diamante','var(--rara)'],['FolhaVerde','nat',2405,'Diamante','var(--rara)'],['TempestadeX','raio',2190,'Ouro','var(--gold)'],['EmberLady','fogo',1980,'Ouro','var(--gold)'],['MaréCheia','agua',1760,'Prata','var(--silver)'],['LoboCinza','nat',1540,'Prata','var(--silver)'],['RaioVeloz','raio',1330,'Bronze','var(--ember)']];
-function renderRank(){document.getElementById('rankList').innerHTML=RANKS.map((r,i)=>
-  `<div class="panel row-item"><div class="rk">${i+1}</div><div class="av" style="--el:${EL[r[1]].c}"><svg class="ico" style="color:${EL[r[1]].c}"><use href="#${EL[r[1]].i}"/></svg></div>
-    <div class="mid"><b>${r[0]}</b><span><span class="pill" style="background:${r[4]}22;color:${r[4]}">${r[3]}</span></span></div>
-    <div class="rt"><b>${r[2].toLocaleString('pt-BR')}</b><span style="color:var(--silver-d)">pts</span></div></div>`).join('');}
+function rankRow(r,isMe){
+  var c=LIGAC[r.liga]||'var(--silver)';
+  return '<div class="panel row-item"'+(isMe?' style="border-color:var(--gold);margin-bottom:14px"':'')+'>'+
+    (isMe?'<span class="corner tl"></span><span class="corner br"></span>':'')+
+    '<div class="rk"'+(isMe?' style="color:var(--silver)"':'')+'>#'+r.pos+'</div>'+
+    '<div class="av" style="--el:'+c+'"><svg class="ico" style="color:'+c+'"><use href="#i-trophy"/></svg></div>'+
+    '<div class="mid"><b>'+esc(r.nome)+(isMe?' (você)':'')+'</b><span>'+
+      '<span class="pill" style="background:rgba(195,204,223,.12);color:'+c+'">'+esc(r.liga)+'</span> '+
+      (r.vitorias|0)+(r.vitorias===1?' vitória':' vitórias')+'</span></div>'+
+    '<div class="rt"><b>'+(r.pts|0).toLocaleString('pt-BR')+'</b><span style="color:var(--silver-d)">pts</span></div></div>';
+}
+async function renderRank(){
+  var me=document.getElementById('rankMe'),lst=document.getElementById('rankList');
+  if(!me||!lst)return;
+  if(!online||!sb){
+    me.innerHTML='<div class="panel pad" style="text-align:center;margin-bottom:14px"><span class="corner tl"></span><span class="corner br"></span>'+
+      '<div style="color:var(--silver);font-size:13px">Entre na sua conta para aparecer no ranking.</div>'+
+      '<button class="btn gold sm" style="margin-top:10px" onclick="go(\'splash\')">Entrar</button></div>';
+    lst.innerHTML='';return;
+  }
+  me.innerHTML='';
+  lst.innerHTML='<div style="text-align:center;color:var(--silver-d);padding:18px">Carregando ranking…</div>';
+  var r=await sb.rpc('ranking_top');
+  var d=(r&&r.data)||{},top=d.top||[];
+  me.innerHTML=d.eu?rankRow(d.eu,true)
+    :'<div class="panel pad" style="text-align:center;margin-bottom:14px"><div style="color:var(--silver-d);font-size:12.5px">Vença um duelo na Arena para entrar no ranking.</div></div>';
+  lst.innerHTML=top.length?top.map(function(t){return rankRow(t,false);}).join('')
+    :'<div class="panel" style="text-align:center;padding:22px;color:var(--silver-d)">Ninguém no ranking ainda. Seja o primeiro.</div>';
+}
 
 /* ============ CLÃ ============ */
 const CLAN=[['Vulcanor_','fogo','Líder',420],['NeriTri','agua','Oficial',380],['Gaiah','nat','Oficial',350],['ZephBolt','raio','Membro',310],['EmberK','fogo','Membro',280],['MaréViva','agua','Membro',240],['LoboFeroz','nat','Membro',200],['TrovãoJr','raio','Membro',160]];
@@ -1042,12 +1183,38 @@ function renderClan(){document.getElementById('clanList').innerHTML=CLAN.map(m=>
     <div class="mid"><b>${m[0]}</b><span>${m[2]}</span></div><div class="rt"><b>${m[3]}</b><span style="color:var(--silver-d)">contrib.</span></div></div>`).join('');}
 
 /* ============ PERFIL ============ */
-function renderPerfil(){
-  document.getElementById('badges').innerHTML=[['Primeira Vitória','i-sword','var(--gold)'],['10 Duelos','i-shield','var(--rara)'],['Colecionador','i-cards','var(--natureza)'],['Chamalar','i-flame','var(--fogo)']]
-    .map(b=>`<div class="badge2"><div class="b" style="--el:${b[2]}"><svg class="ico" style="color:${b[2]}"><use href="#${b[1]}"/></svg></div><span>${b[0]}</span></div>`).join('');
-  document.getElementById('history').innerHTML=[['Vitória','var(--ok)','vs NéreoAzul','+25'],['Vitória','var(--ok)','vs LoboCinza','+22'],['Derrota','var(--danger)','vs DragãoRubro','−18'],['Vitória','var(--ok)','vs RaioVeloz','+20']]
-    .map(h=>`<div class="panel row-item"><div class="av" style="--el:${h[1]}"><svg class="ico" style="color:${h[1]}"><use href="#i-sword"/></svg></div>
-      <div class="mid"><b style="color:${h[1]}">${h[0]}</b><span>${h[2]}</span></div><div class="rt"><b style="color:${h[1]}">${h[3]}</b><span style="color:var(--silver-d)">pts</span></div></div>`).join('');}
+async function renderPerfil(){
+  var v=(online&&profile&&profile.vitorias)|0, dd=(online&&profile&&profile.derrotas)|0;
+  var tot=v+dd, wr=tot?Math.round(v*100/tot):0;
+  var nc=(online&&ownedSet)?ownedSet.size:52;
+  var set=function(id,tx){var e=document.getElementById(id);if(e)e.textContent=tx;};
+  set('perfNome',(online&&profile&&profile.username)||'Convidado');
+  set('perfSub',(online&&profile)
+    ? ((profile.liga||'Bronze')+' · Nível '+(profile.nivel||1)+' · '+(profile.rank_pts|0)+' pts')
+    : 'Modo convidado · sem ranking');
+  set('perfVit',v);set('perfWr',wr+'%');set('perfCartas',nc);
+
+  var B=[['Primeira Vitória','i-sword','var(--gold)',v>=1],
+         ['10 Duelos','i-shield','var(--rara)',tot>=10],
+         ['Colecionador','i-cards','var(--natureza)',nc>=26],
+         ['Lenda da Arena','i-trophy','var(--mitica)',(online&&profile&&profile.rank_pts|0)>=2500]];
+  document.getElementById('badges').innerHTML=B.map(function(b){
+    return '<div class="badge2" style="opacity:'+(b[3]?1:.3)+'"><div class="b" style="--el:'+b[2]+'">'+
+      '<svg class="ico" style="color:'+b[2]+'"><use href="#'+b[1]+'"/></svg></div><span>'+b[0]+'</span></div>';}).join('');
+
+  var h=document.getElementById('history');
+  if(!online||!sb){h.innerHTML='<div class="panel" style="text-align:center;padding:20px;color:var(--silver-d)">Entre na sua conta para guardar o histórico dos duelos.</div>';return;}
+  h.innerHTML='<div style="text-align:center;color:var(--silver-d);padding:16px">Carregando…</div>';
+  var r=await sb.from('matches').select('foe_nome,foe_elem,venceu,pts,criado_em').order('criado_em',{ascending:false}).limit(6);
+  var rows=(r&&r.data)||[];
+  h.innerHTML=rows.length?rows.map(function(m){
+    var c=m.venceu?'var(--ok)':'var(--danger)';
+    return '<div class="panel row-item"><div class="av" style="--el:'+c+'"><svg class="ico" style="color:'+c+'"><use href="#i-sword"/></svg></div>'+
+      '<div class="mid"><b style="color:'+c+'">'+(m.venceu?'Vitória':'Derrota')+'</b><span>vs '+esc(m.foe_nome)+'</span></div>'+
+      '<div class="rt"><b style="color:'+c+'">'+(m.pts>0?'+':'')+(m.pts|0)+'</b><span style="color:var(--silver-d)">pts</span></div></div>';
+  }).join('')
+   :'<div class="panel" style="text-align:center;padding:20px;color:var(--silver-d)">Nenhum duelo na Arena ainda.</div>';
+}
 
 /* ============ MISC ============ */
 async function claimDaily(b){
@@ -1064,7 +1231,7 @@ let toastT;function toast(msg){let t=document.getElementById('toast');if(!t){t=d
 
 /* ============ ROTEADOR ============ */
 const NAV=['home','map','collection','shop','ranking'];
-const INIT={collection:()=>{renderChips();renderCollection();},deck:renderDeck,shop:renderShop,carreira:renderCarreira,torre:renderTorre,ranking:renderRank,clan:renderClan,perfil:renderPerfil};
+const INIT={collection:()=>{renderChips();renderCollection();},deck:renderDeck,shop:renderShop,carreira:renderCarreira,torre:renderTorre,arena:arenaEnter,ranking:renderRank,clan:renderClan,perfil:renderPerfil};
 function go(id){
   if(id==='duel'&&!duel){return startDuel();}
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -1072,7 +1239,9 @@ function go(id){
   scr.classList.add('active');scr.scrollTop=0;closeCard();setBg(id);
   const chrome=id!=='splash';
   document.getElementById('topbar').classList.toggle('hidden',!chrome);
-  document.getElementById('bottomnav').classList.toggle('hidden',!NAV.includes(id));
+  /* a barra segue a classe has-nav da tela: carreira, torre, arena, cla e
+     perfil tambem tem o espaco reservado no CSS e ficavam sem barra */
+  document.getElementById('bottomnav').classList.toggle('hidden',!scr.classList.contains('has-nav'));
   document.querySelectorAll('.navb').forEach(b=>b.classList.toggle('active',b.dataset.scr===id));
   if(id!=='duel'){const ov=document.getElementById('resultOv');if(ov){ov.classList.remove('show');}if(typeof clearTimer==='function')clearTimer();duel=null;}
   if(INIT[id])INIT[id]();
@@ -1107,9 +1276,9 @@ async function doLogin(){
   if(error){authMsg('E-mail ou senha incorretos.');return;}
   await afterAuth();
 }
-function playGuest(){ online=false; profile=null; ownedSet=null; applyProfile(); enter(); }
+function playGuest(){ online=false; profile=null; ownedSet=null; arena=null; applyProfile(); enter(); }
 async function afterAuth(){ authMsg(''); await loadUserData(); enter(); }
-async function doLogout(){ try{ if(sb) await sb.auth.signOut(); }catch(e){} online=false; profile=null; ownedSet=null; deck=[0,1,10,15,26,32,39,45]; go('splash'); }
+async function doLogout(){ try{ if(sb) await sb.auth.signOut(); }catch(e){} online=false; profile=null; ownedSet=null; arena=null; deck=[0,1,10,15,26,32,39,45]; go('splash'); }
 async function loadUserData(){
   try{
     const {data:{user}}=await sb.auth.getUser();
@@ -1128,6 +1297,10 @@ async function loadUserData(){
 function applyProfile(){
   const nm=document.querySelector('#topbar .who .nm');
   if(nm) nm.textContent=(online&&profile)?(profile.username||'Gladiador'):'Convidado';
+  const rk=document.getElementById('topRk');
+  if(rk) rk.textContent=(online&&profile)
+    ? ((profile.liga||'Bronze')+' · Nível '+(profile.nivel||1))
+    : 'Modo convidado';
   if(online&&profile){
     const o=document.getElementById('ouro'); if(o&&profile.ouro!=null)o.textContent=profile.ouro;
     const g=document.getElementById('ess'); if(g&&profile.gemas!=null)g.textContent=profile.gemas;

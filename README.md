@@ -2,32 +2,85 @@
 
 MMORPG casual de navegador — jogo de cartas de gladiadores em mundo de fantasia medieval, com 4 elementos (Fogo, Água, Natureza, Raio), progressão, rankings e duelos entre jogadores. **Mobile-first / retrato (celular em pé).**
 
-## Estado
-Protótipo jogável (v0.4). Front-end completo em HTML/CSS/JS puro, com as 52 cartas ilustradas, cenários e o duelo funcional (sorteio de início, timer de 10s, ataque→defesa alternando, 2 ataques + 2 defesas por jogador). Backend (contas, coleção, PvP) em construção no Supabase.
+## Estado — v0.8
+
+Jogo completo de ponta a ponta: conta real, coleção, deck, economia, Carreira e **Arena ranqueada com PvP assíncrono**. Tudo que vale ouro ou pontos é decidido no banco, não no JavaScript — o repositório é público de propósito e o cliente é tratado como não confiável.
+
+O que dá pra fazer hoje: criar conta e receber um pacote de introdução com 10 cartas e um deck legal de 8, montar deck respeitando o limite de 20★, duelar na Carreira, comprar na loja diária, forjar cartas com essência, e subir de liga na Arena enfrentando o deck de outro jogador. Bronze → Prata → Ouro → Platina → Diamante → Lenda.
 
 ## Como rodar
-Abra `index.html` no navegador (o `imgdata.js` e o `bgdata.js` precisam estar ao lado). Para uma versão de arquivo único, rode o build (abaixo) ou use o `valdoria-standalone.html` gerado.
+
+Abra `index.html` no navegador — `supabase.js`, `imgdata.js` e `bgdata.js` precisam estar ao lado. Para uma versão de arquivo único (bom pra mandar por e-mail ou abrir offline), rode `python3 build/build_standalone.py`.
 
 ## Estrutura
+
 ```
-index.html              jogo (referencia imgdata.js + bgdata.js)
+index.html              o jogo inteiro (HTML + CSS + JS num arquivo só)
+supabase.js             SDK do Supabase vendorizado (sem CDN)
 imgdata.js              52 cartas em base64 (320px JPEG)
-bgdata.js              4 cenários do GPT em base64 (splash, home, mapa, duelo)
-assets/bg-orig/        PNGs originais dos cenários (alta resolução)
-build/                 scripts que geram imgdata.js / bgdata.js a partir dos PNGs
-test/                  testes Playwright (telas + fluxo de duelo)
-supabase/migrations/   schema (0001) + seed do catálogo de 52 cartas (0002)
+bgdata.js               4 cenários em base64 (splash, home, mapa, duelo)
+assets/bg-orig/         PNGs originais dos cenários (alta resolução)
+build/                  gera imgdata.js / bgdata.js / o arquivo único
+test/                   testes Playwright (telas, duelo, efeitos, Arena)
+supabase/migrations/    todo o schema, 0001 → 0009
 ```
 
+## Regras do duelo
+
+Vida **20**. Deck de **8 cartas**, somando no máximo **20★**. Quatro rodadas de ataque→defesa alternando, com **10 segundos** por jogada; se empatar em vida, entra morte súbita (rodadas extras até alguém abrir vantagem). Vantagem elemental: Fogo > Natureza > Água > Raio > Fogo.
+
+## Arena — PvP assíncrono ("espelho de deck")
+
+Não há socket nem partida ao vivo. O servidor sorteia **outro jogador de pontuação parecida** e devolve o deck salvo dele; esse deck é jogado pela mesma IA local. Se ninguém na faixa tiver deck válido, entra um gladiador da guilda (PNJ) e a partida vale menos.
+
+O pareamento é escolhido **pelo servidor**, não pedido pelo cliente: `arena_find()` grava uma linha em `arena_pending`, e `arena_result(p_win)` só paga contra aquela linha — depois apaga. Sem isso, um jogador poderia inventar o adversário e a vitória. Vale também um piso de 12 segundos, validade de 30 minutos e o mesmo teto de 100 partidas/dia da Carreira.
+
+Pontos por partida: vitória rende **+15 a +35**, derrota custa **−7 a −23**, sempre proporcional à diferença de pontuação entre os dois. Ganhar de alguém muito mais forte paga o teto; perder pra alguém muito mais fraco cobra o piso. A pontuação nunca fica negativa.
+
+**Limitação conhecida:** dá pra fugir de uma derrota saindo da tela no meio do duelo — a linha pendente só expira. O teto diário e o piso de 12 segundos limitam o estrago; a correção de verdade exige o servidor saber que o duelo começou, e isso é o marco do PvP em tempo real.
+
 ## Stack
-- **Agora:** HTML5 + CSS + JS (vanilla), mobile-first.
-- **Backend:** Supabase (Postgres + Auth + Realtime) — contas, coleção, ouro, deck, ranking, PvP.
+
+- **Agora:** HTML5 + CSS + JS (vanilla), mobile-first, arquivo único.
+- **Backend:** Supabase (Postgres + Auth) — contas, coleção, ouro, deck, ranking, Arena.
 - **Publicação (planejada):** empacotar com Capacitor → App Store (iOS) + Play Store (Android).
 
 ## Banco (Supabase)
-`supabase/migrations/` versiona o schema:
-- `0001_init.sql` — tabelas `profiles`, `cards`, `collection`, `decks`, RLS por usuário e trigger que dá cartas iniciais + deck no cadastro.
-- `0002_seed_cards.sql` — catálogo das 52 cartas.
+
+`supabase/migrations/` versiona **tudo** que roda em produção — não há passo manual no dashboard.
+
+| Arquivo | O que faz |
+|---|---|
+| `0001_init.sql` | `profiles`, `cards`, `collection`, `decks`, RLS por usuário, trigger de cadastro |
+| `0002_seed_cards.sql` | catálogo das 52 cartas |
+| `0003_economy.sql` | ouro, gemas, essência, loja diária, carreira, recompensa diária |
+| `0004_seguranca_economia_e_deck.sql` | fecha escrita direta em `profiles`/`collection`; trigger `valida_deck()` |
+| `0005_duel_reward_unico_com_carreira.sql` | fim de duelo vira **uma** chamada atômica |
+| `0006_execute_grants_explicitos.sql` | revoga EXECUTE de `public` (ver pegadinha abaixo) |
+| `0007_arena_ranking_e_historico.sql` | Arena, pareamento, pontos, ranking e histórico de partidas |
+| `0008_username_e_grants_de_tabela.sql` | formato e unicidade do apelido; faxina nos GRANTs de tabela |
+| `0009_apelido_com_acento_e_grant_de_deck.sql` | apelido aceita acento; UPDATE de deck restrito por coluna |
+
+### Modelo de permissões
+
+O cliente é público, então o JavaScript **só desenha a tela**. Toda regra de economia vive no banco.
+
+| O quê | Quem pode escrever |
+|---|---|
+| `profiles` | o dono, e **só a coluna `username`** (grant por coluna) |
+| `collection` | ninguém pelo REST — só `grant_card` / `forge_card` / `shop_buy` |
+| `decks` | o dono, só as colunas `nome, cartas, ativo, updated_at`, e ainda passando pelo trigger `valida_deck()` |
+| `arena_pending` | ninguém — RLS ligado sem policy nenhuma, só funções `SECURITY DEFINER` encostam |
+| ouro / gemas / essência / rank | só funções `SECURITY DEFINER` |
+
+**API pública (9 RPCs, só `authenticated`):** `state_get`, `daily_claim`, `duel_reward`, `shop_get`, `shop_buy`, `forge_card`, `arena_find`, `arena_result`, `ranking_top`.
+
+**Duas pegadinhas do Postgres que custaram caro aqui:**
+
+`REVOKE EXECUTE ... FROM anon, authenticated` **não adianta nada** sozinho — EXECUTE é concedido a `PUBLIC` por padrão. Tem que revogar de `public, anon, authenticated` e devolver só o necessário.
+
+`TRUNCATE` **não passa pelo RLS**. Enquanto o papel `authenticated` tivesse TRUNCATE em `profiles`, uma única chamada esvaziaria a tabela inteira por cima de todas as policies. A migração 0008 tira todo GRANT que o jogo não usa.
 
 ## Design system
+
 Azul-real, prata, dourado e brasa. Elementos: Fogo `#ec5a22`, Água `#2aa9d9`, Natureza `#46b45c`, Raio `#f2c31a`. Raridade = cor (Comum prata · Incomum verde · Rara azul · Épica roxo). Fontes: Cinzel Decorative, Cinzel, EB Garamond.

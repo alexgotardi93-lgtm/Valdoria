@@ -285,6 +285,10 @@ img{max-width:100%;display:block}
 @keyframes flip{0%{transform:rotateY(0)}100%{transform:rotateY(360deg)}}
 .hand{display:flex;gap:7px;justify-content:center;margin-top:8px;flex-wrap:wrap}
 .hand .mini{width:62px}
+/* mao aberta do adversario (so no Duelo ao Vivo): menor, so pra leitura */
+.hand.foehand{margin-top:5px;gap:5px}
+.hand.foehand .mini{width:44px}
+.foelbl{text-align:center;font-family:"Cinzel",serif;font-size:10px;letter-spacing:.07em;color:var(--silver-d);margin-top:7px}
 .mini.fx::after{content:'✦';position:absolute;left:4px;top:3px;z-index:3;font-size:11px;color:var(--gold-l);text-shadow:0 0 5px rgba(0,0,0,.95),0 0 10px rgba(230,178,77,.75);pointer-events:none}
 .fxline{font-family:"EB Garamond",serif;font-size:12px;letter-spacing:0;color:var(--silver);margin-top:4px}
 .fxline b{color:var(--cream)}
@@ -426,10 +430,12 @@ img{max-width:100%;display:block}
 
   <!-- DUELO -->
   <section class="screen has-top" id="s-duel">
-    <a class="back" onclick="go('home')"><svg class="ico"><use href="#i-back"/></svg> Sair do duelo</a>
+    <a class="back" onclick="sairDuelo()"><svg class="ico"><use href="#i-back"/></svg> Sair do duelo</a>
     <div class="pg-title">Duelo</div>
     <div class="panel duel-side"><div class="crest" style="width:34px;height:34px;border-color:var(--danger)"><svg class="ico" style="width:17px;height:17px;color:var(--danger)"><use href="#i-shield"/></svg></div>
       <div class="vida"><div class="lab"><b id="foeName">Adversário</b><span id="foeHp">20 / 20</span></div><div class="bar foe"><span id="foeBar" style="width:100%"></span></div></div></div>
+    <div class="foelbl" id="foeHandLbl" style="display:none">MÃO DO ADVERSÁRIO</div>
+    <div class="hand foehand" id="foeHandBox" style="display:none"></div>
     <div class="rounds" id="roundTrack"></div>
     <div class="turn-timer" id="turnTimer"><i id="turnFill"></i><b id="turnSecs">10</b></div>
     <div style="position:relative">
@@ -496,7 +502,9 @@ img{max-width:100%;display:block}
       <div class="tag" id="arMinhaLiga">Bronze</div>
       <div style="font-family:'Cinzel Decorative',serif;font-size:42px;color:var(--gold-l);line-height:1;margin:9px 0 2px" id="arMeusPts">0</div>
       <div style="font-size:12px;color:var(--silver-d)">pontos de ranking · <a onclick="go('ranking')" style="color:var(--gold-l);cursor:pointer">ver classificação</a></div></div>
-    <div class="sect-h"><h3>Seu adversário</h3></div>
+    <div class="sect-h"><h3>Duelo ao Vivo</h3><span class="more">tempo real</span></div>
+    <div id="vivoBox"></div>
+    <div class="sect-h"><h3>Treino contra deck salvo</h3></div>
     <div id="arBox"></div>
     <p class="hint">Você enfrenta o deck salvo de outro gladiador, jogado pela IA. Vencer quem está acima de você vale mais pontos.</p>
     <div class="spacer"></div>
@@ -708,6 +716,17 @@ function renderDuel(){
   document.getElementById('roundTrack').innerHTML=[0,1,2,3].map(r=>`<div class="rd ${r<duel.round?'done':r===duel.round?'now':''}">${r+1}</div>`).join('')
     +(duel.sudden?'<div class="rd now sd">SD'+(duel.sdN>1?duel.sdN:'')+'</div>':'');
   document.getElementById('handLbl').textContent=duel.hand.length+(duel.hand.length===1?' carta':' cartas');
+  renderFoeHand();
+}
+/* No Duelo ao Vivo a mao do adversario e aberta de proposito: varios
+   especiais leem a mao dos dois lados, entao os dois clientes precisam dos
+   dois decks pra chegar no mesmo placar. Esconder seria so fingir. */
+function renderFoeHand(){
+  var b=document.getElementById('foeHandBox'),l=document.getElementById('foeHandLbl');
+  if(!b||!l)return;
+  if(!duel||!duel.live||!duel.foeHand.length){b.style.display='none';l.style.display='none';b.innerHTML='';return;}
+  b.style.display='';l.style.display='';
+  b.innerHTML=duel.foeHand.map(function(c,i){return miniCard(c,i,{fx:hasFx(c)});}).join('');
 }
 function other(s){return s==='you'?'foe':'you';}
 function dm(t){document.getElementById('duelMsg').innerHTML=t;}
@@ -721,10 +740,17 @@ function startTimer(seconds,onTimeout){
   tb.classList.add('on');tb.classList.remove('low');ts.textContent=seconds;
   tf.style.transition='none';tf.style.transform='scaleX(1)';void tf.offsetWidth;
   tf.style.transition='transform '+seconds+'s linear';tf.style.transform='scaleX(0)';
-  duel.tick=setInterval(function(){if(!duel){clearInterval(duel.tick);return;}duel.timeLeft--;ts.textContent=Math.max(0,duel.timeLeft);if(duel.timeLeft<=3)tb.classList.add('low');if(duel.timeLeft<=0)clearInterval(duel.tick);},1000);
+  /* o id fica numa variavel local: quando o duelo acaba, duel vira null e
+     ler duel.tick aqui dentro estouraria a cada segundo */
+  const id=duel.tick=setInterval(function(){
+    if(!duel){clearInterval(id);return;}
+    duel.timeLeft--;ts.textContent=Math.max(0,duel.timeLeft);
+    if(duel.timeLeft<=3)tb.classList.add('low');
+    if(duel.timeLeft<=0)clearInterval(id);
+  },1000);
   if(onTimeout)duel.toEnd=setTimeout(onTimeout,seconds*1000+80);
 }
-function clearTimer(){if(!duel)return;clearInterval(duel.tick);clearTimeout(duel.toEnd);clearTimeout(duel.foeThink);duel.tick=duel.toEnd=duel.foeThink=null;const tb=document.getElementById('turnTimer');if(tb)tb.classList.remove('on');}
+function clearTimer(){if(duel){clearInterval(duel.tick);clearTimeout(duel.toEnd);clearTimeout(duel.foeThink);clearTimeout(duel.liveAuto);duel.tick=duel.toEnd=duel.foeThink=duel.liveAuto=null;}const tb=document.getElementById('turnTimer');if(tb)tb.classList.remove('on');}
 /* ---- sorteio de quem começa ---- */
 function coinFlip(){
   duel.starter=Math.random()<.5?'you':'foe';
@@ -754,6 +780,9 @@ function suddenDeath(){
   duel.sudden=true;duel.sdN=(duel.sdN||0)+1;
   duel.hand=[duel.myRest.shift()];
   duel.foeHand=[duel.foeRest.shift()];
+  /* ao vivo: a reserva sai na ordem e o indice absoluto vai junto — o
+     servidor exige carta = numero da rodada nas rodadas 4..7 */
+  if(duel.live){duel.handI=[duel.myRestI.shift()];duel.foeHandI=[duel.foeRestI.shift()];}
   /* alterna a cada desempate; no primeiro, quem comecou o duelo defende */
   duel.attacker=(duel.sdN%2===1)?other(duel.starter):duel.starter;
   duel.phase='atk';duel.atkCard=null;duel.defCard=null;
@@ -779,13 +808,14 @@ function promptPhase(){
     duel.waiting='you';
     dm('<b>'+rdLbl+'</b> · Você <b style="color:'+col+'">'+verb+'</b> — escolha uma carta'+extra);
     renderHand(true);
-    startTimer(10,function(){autoPickYou();});
+    if(duel.live)liveAbre(true);
+    else startTimer(10,function(){autoPickYou();});
   }else{
     duel.waiting='foe';
     dm('<b>'+rdLbl+'</b> · Adversário <b style="color:'+col+'">'+verb+'</b>…'+extra);
     renderHand(false);
-    startTimer(10,null);
-    duel.foeThink=setTimeout(function(){foePick();},1500+Math.random()*2600);
+    if(duel.live)liveAbre(false);
+    else{startTimer(10,null);duel.foeThink=setTimeout(function(){foePick();},1500+Math.random()*2600);}
   }
 }
 function foePick(){
@@ -799,6 +829,7 @@ function foePick(){
 }
 function playCard(idx){
   if(!duel||duel.waiting!=='you')return;
+  if(duel.live)return liveEnvia(idx);
   const card=duel.hand.splice(idx,1)[0];
   duel.waiting=null;clearTimer();
   commit('you',card);
@@ -806,6 +837,7 @@ function playCard(idx){
 function autoPickYou(){
   if(!duel||duel.waiting!=='you')return;
   const idx=duel.phase==='atk'?bestAtkIdx(duel.hand,duel.you,duel.foe):bestDefIdx(duel.hand,duel.atkCard?duel.atkCard.card:null,duel.foeHand,duel.you,duel.foe);
+  if(duel.live)return liveEnvia(idx);
   const card=duel.hand.splice(idx,1)[0];
   duel.waiting=null;clearTimer();
   if(typeof toast==='function')toast('Tempo esgotado — carta automática');
@@ -937,6 +969,7 @@ function resolveRound(){
 function hpTag(v){return v===0?'<span class="fz">0</span>':(v>0?'<span class="fp">+'+v+'</span>':'<span class="fn">'+v+'</span>');}
 function renderHand(active){
   document.getElementById('duelHand').innerHTML=duel.hand.map(function(c,idx){return miniCard(c,idx,{onclick:active?'playCard('+idx+')':'',dim:!active,fx:hasFx(c)});}).join('');
+  renderFoeHand();
 }
 function elAdv(a,d){return BEATS[a]===d;}
 function slotHTML(c){return miniCard(c,0,{fx:hasFx(c)});}
@@ -966,6 +999,7 @@ function bestDefIdx(hand,atkC,aHand,myHp,foeHp){
   return bi;
 }
 function endDuel(){
+  if(duel&&duel.live)return liveFim();
   clearTimer();renderDuel();
   const win=duel.you>duel.foe,draw=duel.you===duel.foe;
   /* guarda antes de qualquer await: sair da tela zera o duel */
@@ -1119,7 +1153,7 @@ function arenaHead(){
   if(l)l.textContent=(online&&profile&&profile.liga)||'Sem liga';
   if(p)p.textContent=(online&&profile&&profile.rank_pts!=null)?profile.rank_pts:'—';
 }
-function arenaEnter(){ arenaHead(); if(!online||!sb||arena)renderArena(); else arenaFind(); }
+function arenaEnter(){ arenaHead(); vivoCheck(); if(!online||!sb||arena)renderArena(); else arenaFind(); }
 function renderArena(){
   arenaHead();
   if(!online||!sb){
@@ -1170,6 +1204,371 @@ function arenaGuest(){
   var els=['fogo','agua','nat','raio'];
   startDuel(null,{nome:PNJ[Math.floor(Math.random()*PNJ.length)],elem:els[Math.floor(Math.random()*4)],
                   pts:0,liga:'Bronze',bot:true,cartas:[],local:true});
+}
+
+/* ============ DUELO AO VIVO (PvP em tempo real) ============ */
+/* O dono da linha do tempo e o servidor. Ele sorteia os dois decks, escolhe
+   quem comeca e guarda cada jogada num vetor com prazo por fase. O cliente
+   nunca decide nada sozinho: manda match_play e SO desenha a carta quando ela
+   volta em jogadas. Por isso as duas telas veem o mesmo duelo carta por carta,
+   e por isso divergir e impossivel — se os placares finais nao baterem, o
+   servidor marca disputa e ninguem pontua.
+   As cartas viajam por INDICE ABSOLUTO (0..7 no deck sorteado), nao pela
+   posicao na mao, que muda a cada jogada. Por isso duel.handI & cia. */
+function liveDeck(slugs){
+  return (slugs||[]).map(function(sl){var i=SLUG2I[sl];return i==null?null:DECKI[i];})
+                    .filter(function(c){return !!c;});
+}
+function startLive(lv){
+  var meu=liveDeck(lv.meu_deck), dele=liveDeck(lv.deck_dele);
+  if(meu.length<8||dele.length<8){toast('Deck inválido no duelo ao vivo');go('arena');return;}
+  duel={you:20,foe:20,round:0,hand:meu.slice(0,4),foeHand:dele.slice(0,4),
+    myRest:meu.slice(4),foeRest:dele.slice(4),sudden:false,
+    starter:(lv.starter===lv.eu)?'you':'foe',phase:'atk',attacker:'you',
+    atkCard:null,defCard:null,waiting:null,tick:null,toEnd:null,foeThink:null,liveAuto:null,
+    careerElem:null,arena:null,
+    handI:[0,1,2,3],foeHandI:[0,1,2,3],myRestI:[4,5,6,7],foeRestI:[4,5,6,7],
+    live:{id:lv.id,eu:lv.eu,resta:lv.resta,js:lv.jogadas||[],aberta:false,enviando:false,
+          acabou:false,reportado:false,pago:false,busy:false,t:null,parou:false}};
+  go('duel');
+  var fn=document.getElementById('foeName');
+  if(fn)fn.textContent=lv.nome||'Adversário';
+  renderDuel();resetSlots();dm('');
+  if(duel.live.js.length)liveRetoma(duel.live.js);
+  else liveCoin();
+  liveAgenda();
+}
+function liveSide(s){return (s===duel.live.eu)?'you':'foe';}
+/* tira a carta de indice absoluto idx da mao daquele lado */
+function liveTake(side,idx){
+  var iarr=(side==='you')?duel.handI:duel.foeHandI;
+  var carr=(side==='you')?duel.hand:duel.foeHand;
+  var p=iarr.indexOf(idx);
+  if(p<0)return null;
+  iarr.splice(p,1);
+  return carr.splice(p,1)[0];
+}
+/* o sorteio ja veio pronto do servidor; aqui so se mostra */
+function liveCoin(){
+  var ov=document.getElementById('resultOv');
+  ov.innerHTML='<div class="coin"></div><div class="rt" style="font-size:16px;color:var(--silver-l)">Sorteando quem começa…</div>';
+  ov.classList.add('show');
+  setTimeout(function(){if(!duel||!duel.live)return;
+    ov.innerHTML='<div class="rt" style="color:var(--gold-l);font-size:24px">'+(duel.starter==='you'?'Você começa!':'Adversário começa!')+'</div>'+
+      '<div style="color:var(--silver);font-size:12.5px;margin-top:6px">Quem começa ataca primeiro</div>';
+    setTimeout(function(){if(!duel||!duel.live)return;ov.classList.remove('show');beginRound();},1450);
+  },1250);
+}
+/* abre a fase: liga o cronometro do prazo do servidor e tenta aplicar de
+   imediato uma jogada que ja tenha chegado num poll anterior */
+function liveAbre(meu){
+  var lv=duel.live;
+  lv.aberta=true;lv.enviando=false;
+  var sec=Math.max(3,Math.min(30,(lv.resta==null?20:lv.resta)));
+  startTimer(sec,null);
+  /* a carta automatica sai ~2s ANTES do prazo: assim ela conta como jogada
+     nossa, e nao como falta (duas faltas = W.O.) */
+  if(meu)duel.liveAuto=setTimeout(function(){autoPickYou();},Math.max(1200,(sec-2)*1000));
+  if(liveStep(lv.js))return;
+  liveAgenda();
+}
+/* aplica NO MAXIMO uma jogada — a da rodada/fase que esta valendo agora */
+function liveStep(js){
+  if(!duel||!duel.live||!duel.live.aberta)return false;
+  var r=duel.round,f=duel.phase;
+  for(var i=0;i<(js||[]).length;i++){
+    var j=js[i];
+    if(j.r!==r||j.f!==f)continue;
+    var side=liveSide(j.s);
+    var card=liveTake(side,j.c);
+    if(!card)return false;
+    duel.live.aberta=false;duel.live.enviando=false;duel.waiting=null;
+    clearTimer();
+    if(j.auto&&side==='you')toast('Tempo esgotado — carta automática');
+    commit(side,card);
+    return true;
+  }
+  return false;
+}
+async function liveEnvia(idx){
+  var lv=duel&&duel.live;
+  if(!lv||!lv.aberta||lv.enviando)return;
+  var abs=duel.handI[idx];
+  if(abs==null)return;
+  if(!online||!sb)return;
+  lv.enviando=true;
+  clearTimeout(duel.liveAuto);duel.liveAuto=null;
+  renderHand(false);
+  var r0=duel.round,f0=duel.phase;
+  try{
+    var r=await sb.rpc('match_play',{p_rodada:r0,p_fase:f0,p_carta:abs});
+    var d=(r&&r.data)||{};
+    if(!duel||!duel.live)return;
+    lv.enviando=false;
+    if(d.error){
+      if(d.estado_atual){liveSync(d.estado_atual);return;}
+      lv.aberta=true;renderHand(true);
+      toast(d.error==='carta_invalida'?'Essa carta não vale nesta rodada':'Não deu pra enviar a jogada');
+      return;
+    }
+    liveSync(d);
+  }catch(e){
+    if(duel&&duel.live){lv.enviando=false;lv.aberta=true;renderHand(true);toast('Sem conexão — tente de novo');}
+  }
+}
+function liveSync(d){
+  if(!duel||!duel.live||!d)return;
+  var lv=duel.live;
+  if(d.id!=null&&lv.id!=null&&d.id!==lv.id)return;   /* outra partida: ignora */
+  if(d.resta!==undefined)lv.resta=d.resta;
+  if(d.jogadas)lv.js=d.jogadas;
+  if(d.estado==='duelo'){liveStep(lv.js);return;}
+  if(d.estado==='fim'||d.estado==='wo'||d.estado==='disputa'){liveEncerra(d);return;}
+  if(d.estado==='nada'&&!lv.acabou){liveParar();toast('O duelo expirou');go('arena');}
+}
+function liveTick(){
+  var lv=duel&&duel.live;
+  if(!lv||lv.parou||!online||!sb)return;
+  if(lv.busy){liveAgenda();return;}
+  lv.busy=true;
+  sb.rpc('match_state').then(function(r){
+    var l2=duel&&duel.live;if(!l2)return;
+    l2.busy=false;
+    liveSync((r&&r.data)||{});
+    liveAgenda();
+  }).catch(function(){
+    var l2=duel&&duel.live;if(l2){l2.busy=false;liveAgenda();}
+  });
+}
+function liveAgenda(){
+  var lv=duel&&duel.live;
+  if(!lv||lv.parou)return;
+  clearTimeout(lv.t);
+  /* esperando o outro jogar e o unico momento que precisa ser rapido */
+  var ms=lv.acabou?1200:((lv.aberta&&duel.waiting==='foe')?700:1600);
+  lv.t=setTimeout(liveTick,ms);
+}
+function liveParar(){
+  var lv=duel&&duel.live;
+  if(!lv)return;
+  lv.parou=true;clearTimeout(lv.t);lv.t=null;
+}
+/* ---- retomada: F5 no meio da partida ---- */
+function liveRetoma(js){
+  var meio=liveFF(js);
+  renderDuel();
+  if(duel.you<=0||duel.foe<=0)return endDuel();
+  if(meio)promptPhase();
+  else beginRound();
+}
+/* reaplica as jogadas ja registradas sem nenhuma animacao.
+   devolve true se parou no meio de uma rodada (ataque na mesa, falta defesa) */
+function liveFF(js){
+  var i=0;
+  while(i<js.length){
+    var a=js[i];
+    if(a.f!=='atk'){i++;continue;}
+    var r=a.r;
+    if(r>=4){
+      if(!duel.myRest.length||!duel.foeRest.length)break;
+      duel.sudden=true;duel.sdN=r-3;
+      duel.hand=[duel.myRest.shift()];duel.handI=[duel.myRestI.shift()];
+      duel.foeHand=[duel.foeRest.shift()];duel.foeHandI=[duel.foeRestI.shift()];
+    }
+    var aSide=liveSide(a.s);
+    duel.round=r;duel.attacker=aSide;duel.phase='atk';duel.atkCard=null;duel.defCard=null;
+    var ac=liveTake(aSide,a.c);
+    if(!ac)break;
+    duel.atkCard={card:ac,side:aSide};
+    duel.phase='def';
+    var b=js[i+1];
+    if(!b||b.r!==r||b.f!=='def'){
+      var el=document.getElementById(aSide==='you'?'slotYou':'slotFoe');
+      if(el){el.innerHTML=slotHTML(ac);el.classList.add('lit');}
+      return true;
+    }
+    var dSide=other(aSide);
+    var dc=liveTake(liveSide(b.s),b.c);
+    if(!dc)break;
+    var R=computeClash(ac,dc,handOf(aSide),handOf(dSide),hpGet(aSide),hpGet(dSide));
+    addHp(dSide,R.healD-R.dmgDef);
+    addHp(aSide,R.healA-R.dmgAtk);
+    duel.round=r+1;duel.phase='atk';duel.atkCard=null;duel.defCard=null;
+    i+=2;
+  }
+  resetSlots();
+  return false;
+}
+/* ---- fim: os dois lados mandam o placar e o servidor confere ---- */
+function liveFim(){
+  clearTimer();
+  var lv=duel.live;
+  lv.acabou=true;lv.aberta=false;duel.waiting=null;
+  renderDuel();
+  var win=duel.you>duel.foe,draw=duel.you===duel.foe;
+  var col=draw?'var(--silver-l)':(win?'var(--gold-l)':'var(--danger)');
+  var ov=document.getElementById('resultOv');
+  ov.innerHTML='<div class="rt" style="color:'+col+'">'+(draw?'EMPATE':(win?'VITÓRIA':'DERROTA'))+'</div>'+
+    '<div style="color:var(--silver);font-size:13px">Vida final '+Math.max(0,duel.you)+' × '+Math.max(0,duel.foe)+'</div>'+
+    (duel.sudden?'<div style="color:var(--silver-d);font-size:11.5px;margin-top:2px">decidido na morte súbita</div>':'')+
+    '<div id="ovPts" style="color:var(--gold-l);font-size:13px;margin-top:4px;min-height:16px">conferindo com o adversário…</div>';
+  ov.classList.add('show');dm('');
+  if(!lv.reportado&&online&&sb){
+    lv.reportado=true;
+    var a=Math.max(0,Math.min(20,duel.you|0)),b=Math.max(0,Math.min(20,duel.foe|0));
+    sb.rpc('match_report',{p_minha:a,p_dele:b}).then(function(r){
+      var d=(r&&r.data)||{};
+      if(!duel||!duel.live)return;
+      if(d.error){if(d.error!=='cedo_demais')setOv('aguardando o adversário…');}
+      else liveSync(d);
+    }).catch(function(){});
+  }
+  liveAgenda();
+}
+function liveEncerra(d){
+  if(!duel||!duel.live||duel.live.pago)return;
+  var lv=duel.live;
+  lv.pago=true;lv.acabou=true;
+  liveParar();clearTimer();
+  var disp=(d.estado==='disputa'), empate=(d.vencedor===0||d.vencedor==null&&!disp), venci=!!d.venci;
+  var title=disp?'SEM PLACAR':(empate&&!venci?'EMPATE':(venci?'VITÓRIA':'DERROTA'));
+  var col=(disp||empate)&&!venci?'var(--silver-l)':(venci?'var(--gold-l)':'var(--danger)');
+  var motivo=disp?'Os dois lados apuraram placares diferentes — ninguém pontua nesta partida.'
+            :d.motivo==='wo'?(venci?'O adversário abandonou o duelo.':'Você saiu no meio do duelo.')
+            :d.motivo==='ausente'?(venci?'O adversário não confirmou o placar.':'Você não confirmou o placar a tempo.')
+            :'Vida final '+Math.max(0,duel.you)+' × '+Math.max(0,duel.foe);
+  var pts=disp?'':((d.delta>0?'+':'')+(d.delta|0)+' pts · +'+(d.ouro|0)+' Ouro');
+  var ov=document.getElementById('resultOv');
+  ov.innerHTML='<div class="rt" style="color:'+col+'">'+title+'</div>'+
+    '<div style="color:var(--silver);font-size:12.5px;text-align:center;padding:0 22px;line-height:1.4">'+motivo+'</div>'+
+    '<div id="ovPts" style="color:var(--gold-l);font-size:13px;margin-top:4px;min-height:16px">'+pts+'</div>'+
+    '<button class="btn gold sm" style="margin-top:10px" onclick="vivoDeNovo()">Outro duelo ao vivo</button>'+
+    '<button class="btn ghost sm" onclick="go(\'arena\')">Voltar à Arena</button>';
+  ov.classList.add('show');dm('');
+  if(online&&sb){
+    sb.rpc('state_get').then(function(r){
+      var st=(r&&r.data)||{};
+      if(st.perfil){profile=st.perfil;applyProfile();}
+      renderMissions();
+    }).catch(function(){});
+  }
+}
+/* ---- sair do duelo (sem confirm(): dialogo do navegador trava a tela) ---- */
+function sairDuelo(){
+  if(!duel||!duel.live){go('home');return;}
+  if(duel.live.acabou){go('arena');return;}
+  var ov=document.getElementById('resultOv');
+  ov.innerHTML='<div class="rt" style="color:var(--danger);font-size:22px">Desistir?</div>'+
+    '<div style="color:var(--silver);font-size:12.5px;text-align:center;padding:0 22px;line-height:1.4">Sair agora conta como derrota e entrega os pontos ao adversário.</div>'+
+    '<button class="btn gold sm" style="margin-top:12px" onclick="voltarDuelo()">Continuar duelando</button>'+
+    '<button class="btn ghost sm" onclick="desistirDuelo()">Desistir mesmo assim</button>';
+  ov.classList.add('show');
+}
+function voltarDuelo(){var ov=document.getElementById('resultOv');if(ov)ov.classList.remove('show');}
+function desistirDuelo(){
+  var ov=document.getElementById('resultOv');
+  if(ov)ov.innerHTML='<div class="rt" style="font-size:18px;color:var(--silver-l)">Saindo…</div>';
+  liveParar();
+  if(online&&sb)sb.rpc('match_leave').then(function(){go('arena');}).catch(function(){go('arena');});
+  else go('arena');
+}
+
+/* ---- fila do Duelo ao Vivo (painel da tela da Arena) ---- */
+let vivo={t:null,fila:false,busy:false,espera:0,erro:'',seq:0};
+function vivoBoxHTML(h){var b=document.getElementById('vivoBox');if(b)b.innerHTML=h;}
+function vivoRender(){
+  if(!online||!sb){
+    vivoBoxHTML('<div class="panel pad" style="text-align:center"><span class="corner tl"></span><span class="corner br"></span>'+
+      '<div style="color:var(--silver);font-size:13px;line-height:1.5">O Duelo ao Vivo é entre contas reais.<br>Entre para enfrentar outro gladiador em tempo real.</div>'+
+      '<button class="btn ghost block" style="margin-top:11px" onclick="go(\'splash\')">Entrar na conta</button></div>');
+    return;
+  }
+  if(vivo.erro){
+    vivoBoxHTML('<div class="panel pad" style="text-align:center"><span class="corner tl"></span><span class="corner br"></span>'+
+      '<div style="color:var(--danger);font-size:13px;line-height:1.45">'+esc(vivo.erro)+'</div>'+
+      '<button class="btn ghost sm" style="margin-top:10px" onclick="vivoOk()">Entendi</button></div>');
+    return;
+  }
+  if(vivo.fila){
+    var s=Math.max(0,vivo.espera|0),mm=Math.floor(s/60),ss=s%60;
+    vivoBoxHTML('<div class="panel pad" style="text-align:center"><span class="corner tl"></span><span class="corner br"></span>'+
+      '<div class="coin" style="margin:2px auto 12px"></div>'+
+      '<div style="font-family:Cinzel,serif;color:var(--gold-l);font-size:15px">Procurando adversário…</div>'+
+      '<div style="font-size:12px;color:var(--silver-d);margin-top:4px">na fila há '+(mm?mm+'m ':'')+ss+'s · a faixa de pontos abre conforme a espera</div>'+
+      '<button class="btn ghost sm" style="margin-top:12px" onclick="vivoSai()">Sair da fila</button></div>');
+    return;
+  }
+  vivoBoxHTML('<div class="panel pad"><span class="corner tl"></span><span class="corner br"></span>'+
+    '<div style="color:var(--silver);font-size:12.5px;line-height:1.5">Partida de verdade contra outro jogador, os dois jogando ao mesmo tempo com prazo por carta. As mãos são abertas dos dois lados. Vale mais pontos e mais ouro que o treino.</div>'+
+    '<button class="btn gold block" style="margin-top:12px"'+(vivo.busy?' disabled':'')+' onclick="vivoFind()">'+
+      '<svg class="ico"><use href="#i-sword"/></svg> '+(vivo.busy?'Entrando…':'Procurar duelo ao vivo')+'</button></div>');
+}
+function vivoOk(){vivo.erro='';vivoRender();}
+function vivoErro(e){
+  return e==='sem_deck'?'Monte um deck de 8 cartas antes de duelar ao vivo.'
+       :e==='limite_diario'?'Você já jogou 100 partidas hoje. Volte amanhã.'
+       :e==='disputas'?'Três placares divergentes hoje — o Duelo ao Vivo volta amanhã.'
+       :e==='sem_perfil'?'Escolha um apelido no Perfil antes de duelar.'
+       :e==='auth'?'Entre na sua conta para duelar ao vivo.'
+       :'Não deu pra entrar na fila agora.';
+}
+async function vivoFind(){
+  if(!online||!sb){vivoRender();return;}
+  if(vivo.busy)return;
+  vivo.busy=true;vivo.erro='';vivo.seq++;vivoRender();
+  try{
+    var r=await sb.rpc('match_find');
+    var d=(r&&r.data)||{};
+    vivo.busy=false;
+    if(d.error){vivo.fila=false;vivo.erro=vivoErro(d.error);vivoPara();vivoRender();return;}
+    if(d.estado==='fila')vivo.espera=0;
+    vivoAplica(d);
+  }catch(e){vivo.busy=false;vivo.erro='Sem conexão com o servidor.';vivoRender();}
+}
+function vivoAplica(d){
+  if(!d||!d.estado)return;
+  if(d.estado==='fila'){
+    vivo.fila=true;
+    if(d.espera!=null)vivo.espera=d.espera|0;
+    if(d.meus_pts!=null&&profile){profile.rank_pts=d.meus_pts;profile.liga=d.minha_liga;applyProfile();arenaHead();}
+    vivoRender();vivoAgenda();return;
+  }
+  vivo.fila=false;vivoPara();
+  if(d.estado==='duelo'){startLive(d);return;}
+  vivoRender();
+}
+function vivoTick(){
+  if(!vivo.fila||!online||!sb)return;
+  sb.rpc('match_state').then(function(r){
+    if(!vivo.fila)return;
+    var d=(r&&r.data)||{};
+    if(d.error){vivoAgenda();return;}
+    vivoAplica(d);
+  }).catch(function(){vivoAgenda();});
+}
+function vivoAgenda(){clearTimeout(vivo.t);if(!vivo.fila)return;vivo.t=setTimeout(vivoTick,1500);}
+function vivoPara(){clearTimeout(vivo.t);vivo.t=null;}
+async function vivoSai(){
+  vivo.fila=false;vivoPara();vivoRender();
+  if(online&&sb){try{await sb.rpc('match_leave');}catch(e){}}
+}
+function vivoDeNovo(){go('arena');vivoFind();}
+/* ao entrar na Arena: retoma duelo em andamento ou fila deixada pra tras */
+async function vivoCheck(){
+  if(!online||!sb){vivo.fila=false;vivoPara();vivoRender();return;}
+  if(vivo.busy)return;
+  vivoRender();
+  /* se um "procurar duelo" comecar enquanto esta consulta esta no ar, a
+     resposta dela ja nasceu velha e nao pode desfazer a fila nova */
+  var s0=vivo.seq;
+  try{
+    var r=await sb.rpc('match_state');
+    var d=(r&&r.data)||{};
+    if(s0!==vivo.seq)return;
+    if(d.error||vivo.busy){vivoRender();return;}
+    if(d.estado==='fim'||d.estado==='wo'||d.estado==='disputa'){vivo.fila=false;vivoPara();vivoRender();return;}
+    vivoAplica(d);
+  }catch(e){vivoRender();}
 }
 /* ============ RANKING ============ */
 function rankRow(r,isMe){
@@ -1360,7 +1759,8 @@ function go(id){
      perfil tambem tem o espaco reservado no CSS e ficavam sem barra */
   document.getElementById('bottomnav').classList.toggle('hidden',!scr.classList.contains('has-nav'));
   document.querySelectorAll('.navb').forEach(b=>b.classList.toggle('active',b.dataset.scr===id));
-  if(id!=='duel'){const ov=document.getElementById('resultOv');if(ov){ov.classList.remove('show');}if(typeof clearTimer==='function')clearTimer();duel=null;}
+  if(id!=='duel'){const ov=document.getElementById('resultOv');if(ov){ov.classList.remove('show');}if(typeof liveParar==='function')liveParar();if(typeof clearTimer==='function')clearTimer();duel=null;}
+  if(id!=='arena'&&typeof vivoPara==='function')vivoPara();
   if(INIT[id])INIT[id]();
   if(navigator.vibrate)navigator.vibrate(5);
 }

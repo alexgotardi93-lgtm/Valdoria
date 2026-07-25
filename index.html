@@ -239,16 +239,17 @@ img{max-width:100%;display:block}
 .rd{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-family:"Cinzel",serif;font-size:13px;color:var(--silver-d);background:rgba(10,23,48,.6);border:1px solid var(--line)}
 .rd.now{color:var(--gold-l);border-color:var(--gold);box-shadow:0 0 12px rgba(230,178,77,.35)}
 .rd.done{color:var(--ok);border-color:rgba(90,208,122,.5)}
-.arena{position:relative;border-radius:14px;min-height:160px;margin:4px 0;display:flex;align-items:center;justify-content:center;gap:14px;padding:14px;
+.rd.sd{color:var(--danger);border-color:rgba(224,83,60,.65);box-shadow:0 0 12px rgba(224,83,60,.35)}
+.arena{position:relative;border-radius:14px;min-height:150px;margin:4px 0;display:flex;align-items:center;justify-content:center;gap:14px;padding:14px;
   background:radial-gradient(80% 90% at 50% 50%,rgba(40,80,150,.25),transparent 70%),linear-gradient(180deg,#0c1a35,#070d1c);border:1px solid var(--line-strong)}
 .slot{width:78px;aspect-ratio:3/4;border-radius:10px;border:1.5px dashed var(--line-strong);display:grid;place-items:center;color:var(--silver-d);font-size:10px;text-align:center;background:rgba(8,14,30,.5)}
 .slot.foe{border-color:rgba(224,83,60,.5)}.slot.you{border-color:rgba(90,208,122,.5)}
 .slot .mini{width:100%;height:100%;aspect-ratio:auto}
 .shopcard{display:flex;flex-direction:column;gap:7px}.shopcard .mini{width:100%}.shopcard .price{width:100%;justify-content:center}
 .vs{font-family:"Cinzel Decorative",serif;color:var(--gold-l);font-size:19px;text-shadow:0 0 10px rgba(230,178,77,.4)}
-.duel-msg{text-align:center;font-family:"Cinzel",serif;color:var(--gold-l);font-size:13px;letter-spacing:.04em;margin:8px 0 6px;min-height:18px}
+.duel-msg{text-align:center;font-family:"Cinzel",serif;color:var(--gold-l);font-size:13px;letter-spacing:.04em;margin:6px 0 4px;min-height:58px}
 .duel-msg b{color:var(--cream)}
-.turn-timer{position:relative;height:8px;border-radius:5px;background:rgba(195,204,223,.16);margin:2px 8px 20px;opacity:0;transition:opacity .25s}
+.turn-timer{position:relative;height:8px;border-radius:5px;background:rgba(195,204,223,.16);margin:2px 8px 18px;opacity:0;transition:opacity .25s}
 .turn-timer.on{opacity:1}
 .turn-timer i{position:absolute;inset:0;background:linear-gradient(90deg,var(--gold),var(--gold-l));border-radius:5px;transform-origin:left;box-shadow:0 0 12px rgba(230,178,77,.55)}
 .turn-timer.low i{background:linear-gradient(90deg,#e0533c,#ff8a6a);box-shadow:0 0 12px rgba(224,83,60,.6)}
@@ -262,6 +263,13 @@ img{max-width:100%;display:block}
 @keyframes flip{0%{transform:rotateY(0)}100%{transform:rotateY(360deg)}}
 .hand{display:flex;gap:7px;justify-content:center;margin-top:8px;flex-wrap:wrap}
 .hand .mini{width:62px}
+.mini.fx::after{content:'✦';position:absolute;left:4px;top:3px;z-index:3;font-size:11px;color:var(--gold-l);text-shadow:0 0 5px rgba(0,0,0,.95),0 0 10px rgba(230,178,77,.75);pointer-events:none}
+.fxline{font-family:"EB Garamond",serif;font-size:12px;letter-spacing:0;color:var(--silver);margin-top:4px}
+.fxline b{color:var(--cream)}
+.fp{color:var(--ok);font-weight:700}.fn{color:var(--danger);font-weight:700}.fz{color:var(--silver-d)}
+.fxlog{display:flex;flex-wrap:wrap;gap:4px 5px;justify-content:center;margin-top:5px}
+.fxlog span{font-family:"EB Garamond",serif;font-size:10.5px;letter-spacing:0;line-height:1.3;color:var(--gold-l);background:rgba(230,178,77,.1);border:1px solid rgba(230,178,77,.3);border-radius:20px;padding:2px 8px}
+.fxlog span.foe{color:#ffb3a3;background:rgba(224,83,60,.12);border-color:rgba(224,83,60,.35)}
 .hand .mini.dim{opacity:.35;filter:grayscale(.5);pointer-events:none}
 .result-ov{position:absolute;inset:0;z-index:15;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:rgba(4,7,14,.85);backdrop-filter:blur(3px);border-radius:14px}
 .result-ov.show{display:flex}
@@ -565,8 +573,9 @@ function slug(s){return s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().
 function cardImg(c){return (typeof CARDIMG!=='undefined'&&CARDIMG[slug(c.nm)])||null;}
 function miniCard(c,idx,opts){opts=opts||{};const e=EL[c.el];const src=cardImg(c);
   const badge=opts.badge?`<div class="badge">${opts.badge}</div>`:'';
-  if(src)return `<div class="mini imgcard${opts.picked?' picked':''}${opts.dim?' dim':''}" style="--rc:${RAR[c.rar]}" ${opts.onclick?`onclick="${opts.onclick}"`:''}>${badge}<img src="${src}" alt="${c.nm}" loading="lazy"></div>`;
-  return `<div class="mini${opts.picked?' picked':''}${opts.dim?' dim':''}" style="--rc:${RAR[c.rar]};--el-c:${e.c}" ${opts.onclick?`onclick="${opts.onclick}"`:''}>${badge}
+  const fxc=opts.fx?' fx':'';
+  if(src)return `<div class="mini imgcard${opts.picked?' picked':''}${opts.dim?' dim':''}${fxc}" style="--rc:${RAR[c.rar]}" ${opts.onclick?`onclick="${opts.onclick}"`:''}>${badge}<img src="${src}" alt="${c.nm}" loading="lazy"></div>`;
+  return `<div class="mini${opts.picked?' picked':''}${opts.dim?' dim':''}${fxc}" style="--rc:${RAR[c.rar]};--el-c:${e.c}" ${opts.onclick?`onclick="${opts.onclick}"`:''}>${badge}
     <div class="top"><svg class="el" style="color:${e.c}"><use href="#${e.i}"/></svg><span class="stars">${starStr(c.st)}</span></div>
     <div class="art"><svg class="ico" style="color:${e.c}"><use href="#${e.i}"/></svg></div>
     <div class="nm">${c.nm}</div><div class="stat"><span>${c.atk}</span><span class="d">${c.def}</span></div></div>`;}
@@ -579,14 +588,16 @@ function setFilter(v){colFilter=v;renderChips();renderCollection();}
 function renderCollection(){let list=DECKI.map((c,i)=>({c,i}));
   if(colFilter==='rar')list=list.filter(x=>x.c.rar==='rara'||x.c.rar==='epica');
   else if(colFilter)list=list.filter(x=>x.c.el===colFilter);
-  document.getElementById('cardsGrid').innerHTML=list.map(x=>miniCard(x.c,x.i,{onclick:`openCard(${x.i})`,dim:!owned(x.i)})).join('');}
+  document.getElementById('cardsGrid').innerHTML=list.map(x=>miniCard(x.c,x.i,{onclick:`openCard(${x.i})`,dim:!owned(x.i),fx:hasFx(x.c)})).join('');}
 
 /* ============ CARD MODAL ============ */
 function openCard(i){const c=DECKI[i],e=EL[c.el];const src=cardImg(c);
   document.getElementById('cardModalBody').innerHTML=src?`<div style="position:relative;width:min(80%,320px)">
       <button class="mclose" onclick="closeCard()"><svg class="ico"><use href="#i-close"/></svg></button>
       <img src="${src}" alt="${c.nm}" style="width:100%;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.7)">
-      <div style="text-align:center;margin-top:10px;font-size:12.5px;color:var(--silver);line-height:1.35">${c.sp}</div></div>`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:9px;font-size:12px;color:var(--silver)"><span style="display:flex;align-items:center;gap:5px"><svg style="width:13px;height:13px;color:${e.c}"><use href="#${e.i}"/></svg>${e.nm}</span><span style="color:var(--gold-l);font-size:10px;letter-spacing:-1px">${starStr(c.st)}</span><span>ATQ <b style="color:var(--gold-l)">${c.atk}</b> · DEF <b style="color:var(--cream)">${c.def}</b></span></div>
+      <div style="text-align:center;margin-top:8px;font-size:10px;font-family:Cinzel,serif;letter-spacing:.1em;color:${hasFx(c)?'var(--gold-l)':'var(--silver-d)'}">${hasFx(c)?'✦ ESPECIAL · '+RARN[c.rar].toUpperCase():RARN[c.rar].toUpperCase()}</div>
+      <div style="text-align:center;margin-top:4px;font-size:12.5px;color:var(--silver);line-height:1.35">${c.sp}</div></div>`
     :`<div class="bigcard" style="--rc:${RAR[c.rar]};--el-c:${e.c}">
     <button class="mclose" onclick="closeCard()"><svg class="ico"><use href="#i-close"/></svg></button>
     <div class="bhdr">${c.nm}</div>
@@ -610,17 +621,37 @@ function renderDeck(){
     :deck.length!==8?`<span style="color:var(--silver-d)">Escolha ${8-deck.length>0?8-deck.length+' carta(s) a mais':'menos cartas'} · toque para adicionar/remover</span>`
     :`<span style="color:var(--danger)">Passou de 20★ — troque cartas mais fortes</span>`;
   document.getElementById('deckGrid').innerHTML=DECKI.map((c,i)=>{const pos=deck.indexOf(i);const ok=owned(i);
-    return miniCard(c,i,{picked:pos>=0,dim:!ok,badge:pos>=0?'✓':null,onclick:ok?`toggleDeck(${i})`:''});}).join('');}
+    return miniCard(c,i,{picked:pos>=0,dim:!ok,fx:hasFx(c),badge:pos>=0?'✓':null,onclick:ok?`toggleDeck(${i})`:''});}).join('');}
 function toggleDeck(i){if(!owned(i)){toast('Carta bloqueada — desbloqueie na Loja');return;}const p=deck.indexOf(i);if(p>=0)deck.splice(p,1);else if(deck.length<8)deck.push(i);renderDeck();if(navigator.vibrate)navigator.vibrate(6);}
 /* saveDeck: definido no bloco Supabase (persiste na conta quando logado) */
 
 /* ============ DUELO (motor simplificado do GDD) ============ */
 let duel=null;
+/* deck do adversario: mesma regra do jogador (8 cartas, ate 20 estrelas).
+   Na Carreira o elenco e do elemento do continente e a raridade abre conforme o estagio. */
+function buildFoeDeck(elem,stage){
+  var pool=DECKI.filter(function(c){
+    if(elem&&c.el!==elem)return false;
+    if(stage!=null){
+      if(stage<3&&(c.rar==='rara'||c.rar==='epica'))return false;
+      if(stage<7&&c.rar==='epica')return false;
+    }
+    return true;});
+  if(pool.length<8)pool=DECKI.filter(function(c){return !elem||c.el===elem;});
+  for(var t=0;t<80;t++){
+    var s=pool.slice().sort(function(){return Math.random()-.5;}).slice(0,8);
+    if(s.length<8)break;
+    if(s.reduce(function(a,c){return a+c.st;},0)<=20)return s;
+  }
+  return pool.slice().sort(function(a,b){return a.st-b.st;}).slice(0,8);
+}
 function startDuel(careerElem){
-  const myDeck=(deck.length===8?deck:[11,12,0,6,23,25,37,50]).map(i=>DECKI[i]);
+  const myDeck=(deck.length===8?deck:[0,1,10,15,26,32,39,45]).map(i=>DECKI[i]);
   const shuffled=[...myDeck].sort(()=>Math.random()-.5);
-  const foePool=DECKI.slice().sort(()=>Math.random()-.5);
-  duel={you:20,foe:20,round:0,hand:shuffled.slice(0,4),foeHand:foePool.slice(0,4),
+  const stage=careerElem?((online&&career&&career[careerElem])||0):null;
+  const foeDeck=buildFoeDeck(careerElem||null,stage).sort(()=>Math.random()-.5);
+  duel={you:20,foe:20,round:0,hand:shuffled.slice(0,4),foeHand:foeDeck.slice(0,4),
+    myRest:shuffled.slice(4),foeRest:foeDeck.slice(4),sudden:false,
     starter:null,phase:'atk',attacker:'you',atkCard:null,defCard:null,waiting:null,tick:null,toEnd:null,foeThink:null,careerElem:careerElem||null};
   go('duel');renderDuel();resetSlots();dm('');coinFlip();
 }
@@ -629,8 +660,9 @@ function renderDuel(){
   document.getElementById('youHp').textContent=Math.max(0,duel.you)+' / 20';
   document.getElementById('foeBar').style.width=Math.max(0,duel.foe)/20*100+'%';
   document.getElementById('youBar').style.width=Math.max(0,duel.you)/20*100+'%';
-  document.getElementById('roundTrack').innerHTML=[0,1,2,3].map(r=>`<div class="rd ${r<duel.round?'done':r===duel.round?'now':''}">${r+1}</div>`).join('');
-  document.getElementById('handLbl').textContent=duel.hand.length+' cartas';
+  document.getElementById('roundTrack').innerHTML=[0,1,2,3].map(r=>`<div class="rd ${r<duel.round?'done':r===duel.round?'now':''}">${r+1}</div>`).join('')
+    +(duel.sudden?'<div class="rd now sd">SD'+(duel.sdN>1?duel.sdN:'')+'</div>':'');
+  document.getElementById('handLbl').textContent=duel.hand.length+(duel.hand.length===1?' carta':' cartas');
 }
 function other(s){return s==='you'?'foe':'you';}
 function dm(t){document.getElementById('duelMsg').innerHTML=t;}
@@ -662,11 +694,30 @@ function coinFlip(){
 /* ---- máquina de estados da rodada ---- */
 function beginRound(){
   if(!duel)return;clearTimer();
-  if(duel.round>=4||duel.you<=0||duel.foe<=0)return endDuel();
+  if(duel.you<=0||duel.foe<=0)return endDuel();
+  if(duel.round>=4){
+    if(duel.you!==duel.foe||!duel.myRest.length||!duel.foeRest.length)return endDuel();
+    return suddenDeath();
+  }
   duel.attacker=(duel.round%2===0)?duel.starter:other(duel.starter);
   duel.phase='atk';duel.atkCard=null;duel.defCard=null;
   renderDuel();resetSlots();renderHand(false);
   promptPhase();
+}
+/* ---- morte subita: empatou em 4 rodadas, cada um saca 1 carta da reserva ---- */
+function suddenDeath(){
+  duel.sudden=true;duel.sdN=(duel.sdN||0)+1;
+  duel.hand=[duel.myRest.shift()];
+  duel.foeHand=[duel.foeRest.shift()];
+  /* alterna a cada desempate; no primeiro, quem comecou o duelo defende */
+  duel.attacker=(duel.sdN%2===1)?other(duel.starter):duel.starter;
+  duel.phase='atk';duel.atkCard=null;duel.defCard=null;
+  var ov=document.getElementById('resultOv');
+  ov.innerHTML='<div class="rt" style="color:var(--danger);font-size:27px">MORTE S\u00daBITA'+(duel.sdN>1?' '+duel.sdN:'')+'</div>'+
+    '<div style="color:var(--silver);font-size:12.5px;text-align:center;padding:0 22px;margin-top:2px;line-height:1.4">'+(duel.sdN>1?'Ainda empatados':'Empate')+' em '+duel.you+' de Vida. Cada um saca 1 carta nova do deck \u2014 e quem come\u00e7ou o duelo agora defende.</div>';
+  ov.classList.add('show');
+  renderDuel();resetSlots();renderHand(false);dm('');
+  setTimeout(function(){if(!duel)return;ov.classList.remove('show');promptPhase();},2700);
 }
 function promptPhase(){
   if(!duel)return;
@@ -674,14 +725,19 @@ function promptPhase(){
   const verb=duel.phase==='atk'?'ataca':'defende';
   const col=duel.phase==='atk'?'var(--gold-l)':'var(--agua)';
   const rd=duel.round+1;
+  const rdLbl=duel.sudden?('Morte s\u00fabita'+(duel.sdN>1?' '+duel.sdN:'')):'Rodada '+rd+'/4';
+  var extra='';
+  if(duel.phase==='def'&&duel.atkCard){var ac=duel.atkCard.card;
+    extra='<div class="fxline">Ataque na mesa: <b>'+ac.nm+'</b> · ATQ <b>'+ac.atk+'</b> · '+EL[ac.el].nm+'</div>'+
+      (hasFx(ac)?'<div class="fxlog"><span'+(duel.atkCard.side==='foe'?' class="foe"':'')+'>\u2726 '+ac.sp+'</span></div>':'');}
   if(picker==='you'){
     duel.waiting='you';
-    dm('<b>Rodada '+rd+'/4</b> · Você <b style="color:'+col+'">'+verb+'</b> — escolha uma carta');
+    dm('<b>'+rdLbl+'</b> · Você <b style="color:'+col+'">'+verb+'</b> — escolha uma carta'+extra);
     renderHand(true);
     startTimer(10,function(){autoPickYou();});
   }else{
     duel.waiting='foe';
-    dm('<b>Rodada '+rd+'/4</b> · Adversário <b style="color:'+col+'">'+verb+'</b>…');
+    dm('<b>'+rdLbl+'</b> · Adversário <b style="color:'+col+'">'+verb+'</b>…'+extra);
     renderHand(false);
     startTimer(10,null);
     duel.foeThink=setTimeout(function(){foePick();},1500+Math.random()*2600);
@@ -690,8 +746,8 @@ function promptPhase(){
 function foePick(){
   if(!duel||duel.waiting!=='foe')return;
   let idx;
-  if(duel.phase==='atk')idx=bestIdx(duel.foeHand,'atk');
-  else idx=bestDefIdx(duel.foeHand,duel.atkCard?duel.atkCard.card:null);
+  if(duel.phase==='atk')idx=bestAtkIdx(duel.foeHand,duel.foe,duel.you);
+  else idx=bestDefIdx(duel.foeHand,duel.atkCard?duel.atkCard.card:null,duel.hand,duel.foe,duel.you);
   const card=duel.foeHand.splice(idx,1)[0];
   duel.waiting=null;clearTimer();
   commit('foe',card);
@@ -704,7 +760,7 @@ function playCard(idx){
 }
 function autoPickYou(){
   if(!duel||duel.waiting!=='you')return;
-  const idx=duel.phase==='atk'?bestIdx(duel.hand,'atk'):bestDefIdx(duel.hand,duel.atkCard?duel.atkCard.card:null);
+  const idx=duel.phase==='atk'?bestAtkIdx(duel.hand,duel.you,duel.foe):bestDefIdx(duel.hand,duel.atkCard?duel.atkCard.card:null,duel.foeHand,duel.you,duel.foe);
   const card=duel.hand.splice(idx,1)[0];
   duel.waiting=null;clearTimer();
   if(typeof toast==='function')toast('Tempo esgotado — carta automática');
@@ -725,37 +781,154 @@ function commit(side,card){
     resolveRound();
   }
 }
+/* ============ ESPECIAIS DAS CARTAS ============ */
+/* 28 cartas (incomuns/raras/epicas) tem efeito real no duelo. Comuns so tem frase de sabor. */
+const SPEC_ON=new Set(['gladiadora-ember','berserker-cinzas','salamandra-de-guerra','piromante-vingativa','ignarok-o-incandescente','fenix-de-chamalar','vulkanor-senhor-das-forjas','sanguessuga-abissal','corsaria-das-brumas','curandeira-da-mare','guardia-do-recife','almirante-neritide','leviata-das-profundezas','thalassa-rainha-das-mares','alcateia-unida','guardiao-do-arco-iris','urso-espirito','ent-anciao','colosso-de-carvalho','matriarca-da-floresta','gaia-a-mae-bosque','aguia-trovejante','condutor-temerario','cavaleira-do-trovao','xama-das-tempestades','senhor-dos-ventos','tempestade-viva','zephyros-furia-do-ceu']);
+function hasFx(c){return SPEC_ON.has(slug(c.nm));}
+function handOf(side){return side==='you'?duel.hand:duel.foeHand;}
+function hpGet(side){return side==='you'?duel.you:duel.foe;}
+function addHp(side,d){if(!d)return;if(side==='you')duel.you=Math.min(20,duel.you+d);else duel.foe=Math.min(20,duel.foe+d);}
+function natCount(h){var n=0;h.forEach(function(c){if(c.el==='nat')n++;});return n;}
+function elCount(h,extra){var m={};h.forEach(function(c){m[c.el]=1;});if(extra)m[extra]=1;return Object.keys(m).length;}
+function inHand(h,sl){return h.some(function(c){return slug(c.nm)===sl;});}
+const PHANTOMS=['fogo','agua','nat','raio'].map(function(e){return {nm:'',el:e,rar:'comum',st:2,atk:3,def:3,sp:''};});
+
+/* Resolve um confronto SEM alterar o estado.
+   aHand/dHand = maos ja SEM as cartas jogadas. Devolve numeros + log dos especiais. */
+function computeClash(atkC,defC,aHand,dHand,aHp,dHp){
+  var as=slug(atkC.nm),ds=slug(defC.nm),L=[],LF=[];
+  var A=atkC.atk,D=defC.def,pierce=0,pierceAll=false,bonusV=2,noElem=false;
+  var healA=0,healD=0,selfA=0,n;
+  function la(t){L.push(t);}      /* especial do atacante */
+  function ld(t){LF.push(t);}     /* especial do defensor */
+  /* --- passiva de mao: Gaia --- */
+  if(atkC.el==='nat'&&inHand(aHand,'gaia-a-mae-bosque')){A+=1;la('Despertar da Selva: +1 ATQ');}
+  if(defC.el==='nat'&&inHand(dHand,'gaia-a-mae-bosque')){D+=1;ld('Despertar da Selva: +1 DEF');}
+  /* --- especiais de quem ATACA --- */
+  switch(as){
+    case 'gladiadora-ember': if(dHp<=10){A+=2;la('Sede de arena: +2 ATQ');} break;
+    case 'berserker-cinzas': A+=3;selfA+=1;la('Fúria cega: +3 ATQ, -1 Vida'); break;
+    case 'ignarok-o-incandescente': pierce+=2;la('Investida ígnea: ignora 2 DEF'); break;
+    case 'vulkanor-senhor-das-forjas': pierceAll=true;la('Ira do Vulcão: ignora TODA a DEF'); break;
+    case 'leviata-das-profundezas': pierce+=3;la('Esmagar: ignora 3 DEF'); break;
+    case 'sanguessuga-abissal': break;
+    case 'alcateia-unida': n=natCount(aHand); if(n){A+=n;la('Matilha: +'+n+' ATQ');} break;
+    case 'matriarca-da-floresta': n=natCount(aHand); if(n){A+=n;la('Elo da matilha: +'+n+' ATQ');} break;
+    case 'guardiao-do-arco-iris': if(elCount(aHand,atkC.el)>=3){A+=2;la('Biodiversidade: +2 ATQ');} break;
+    case 'urso-espirito': A+=1;la('Fúria selvagem: +1 ATQ'); break;
+    case 'aguia-trovejante': pierce+=1;la('Ataque relâmpago: ignora 1 DEF'); break;
+    case 'condutor-temerario': A+=3;la('Sobrecarga: +3 ATQ'); break;
+    case 'tempestade-viva': A+=2;pierce+=2;la('Descarga: +2 ATQ, ignora 2 DEF'); break;
+    case 'zephyros-furia-do-ceu': A+=3;la('Julgamento Relâmpago: +3 ATQ, sem recuo'); break;
+    case 'xama-das-tempestades': bonusV=4; break;
+  }
+  /* --- especiais de quem DEFENDE --- */
+  switch(ds){
+    case 'salamandra-de-guerra': D+=2;ld('Pele de lava: +2 DEF'); break;
+    case 'guardia-do-recife': D+=3;ld('Barreira de coral: +3 DEF'); break;
+    case 'ent-anciao': D+=3;ld('Raízes: +3 DEF'); break;
+    case 'thalassa-rainha-das-mares': D+=2;ld('Maré Suprema: +2 DEF'); break;
+    case 'urso-espirito': D+=1;ld('Fúria selvagem: +1 DEF'); break;
+    case 'guardiao-do-arco-iris': if(elCount(dHand,defC.el)>=3){D+=2;ld('Biodiversidade: +2 DEF');} break;
+    case 'matriarca-da-floresta': n=natCount(dHand); if(n){D+=n;ld('Elo da matilha: +'+n+' DEF');} break;
+    case 'corsaria-das-brumas': noElem=true; break;
+  }
+  /* --- bonus elemental --- */
+  var bonus=0;
+  if(elAdv(atkC.el,defC.el)){
+    if(noElem)ld('Névoa: anula o bônus elemental');
+    else{bonus=bonusV;la(bonusV===4?'Corrente: bônus elemental +4':'Vantagem elemental: +2');}
+  }
+  var Deff=pierceAll?0:Math.max(0,D-pierce);
+  var result=A+bonus-Deff;
+  var dmgD=0,dmgA=0;
+  if(result>0)dmgD=result; else if(result<0)dmgA=-result;
+  var falhou=(result<=0);
+  /* --- pos-efeitos do DEFENSOR --- */
+  if(ds==='colosso-de-carvalho'&&dmgA>0){dmgA*=2;ld('Casca imortal: recuo dobrado');}
+  if(ds==='senhor-dos-ventos'&&dmgD>0){var red=Math.min(2,dmgD);dmgD-=red;ld('Reflexos do raio: -'+red+' de dano');}
+  if(ds==='almirante-neritide'&&falhou){healD+=2;ld('Contra-maré: +2 Vida');}
+  if(ds==='thalassa-rainha-das-mares'&&falhou){healD+=3;ld('Maré Suprema: +3 Vida');}
+  /* --- pos-efeitos do ATACANTE --- */
+  if(as==='zephyros-furia-do-ceu'&&dmgA>0)dmgA=0;
+  if(as==='condutor-temerario'&&falhou){dmgA+=1;la('Sobrecarga falhou: -1 Vida extra');}
+  if(as==='cavaleira-do-trovao'&&dmgD>0){dmgD+=1;la('Ímpeto do trovão: +1 de dano');}
+  if(as==='sanguessuga-abissal'&&dmgD>0){healA+=1;la('Vampirismo: +1 Vida');}
+  dmgA+=selfA;
+  /* --- vencer o confronto / fim de confronto --- */
+  if(as==='fenix-de-chamalar'&&result>0){healA+=3;la('Renascer: +3 Vida');}
+  if(ds==='fenix-de-chamalar'&&result<0){healD+=3;ld('Renascer: +3 Vida');}
+  if(as==='curandeira-da-mare'){healA+=1;la('Bênção das águas: +1 Vida');}
+  if(ds==='curandeira-da-mare'){healD+=1;ld('Bênção das águas: +1 Vida');}
+  /* --- vinganca (checa perda de Vida ja calculada) --- */
+  if(as==='piromante-vingativa'&&dmgA>0){dmgD+=1;la('Chama vingativa: -1 no oponente');}
+  if(ds==='piromante-vingativa'&&dmgD>0){dmgA+=1;ld('Chama vingativa: -1 no oponente');}
+  return {A:A,D:D,Deff:Deff,bonus:bonus,result:result,dmgDef:dmgD,dmgAtk:dmgA,healA:healA,healD:healD,logA:L,logD:LF};
+}
+
 function resolveRound(){
   if(!duel)return;clearTimer();
-  const atk=duel.atkCard.card,def=duel.defCard.card,attackerIsYou=duel.atkCard.side==='you';
-  const bonus=elAdv(atk.el,def.el)?2:0;
-  const result=atk.atk+bonus-def.def;
-  const arena=document.querySelector('#s-duel .arena');
+  var atk=duel.atkCard.card,def=duel.defCard.card;
+  var aSide=duel.atkCard.side,dSide=other(aSide);
+  var R=computeClash(atk,def,handOf(aSide),handOf(dSide),hpGet(aSide),hpGet(dSide));
+  var arena=document.querySelector('#s-duel .arena');
   if(arena){arena.classList.add('clash');setTimeout(function(){arena.classList.remove('clash');},520);}
-  let msg;
-  if(result>0){if(attackerIsYou){duel.foe-=result;msg='Acertou! −'+result+' na Vida do adversário';}else{duel.you-=result;msg='O ataque conectou — você perde '+result+' de Vida';}}
-  else if(result<0){const r=Math.abs(result);if(attackerIsYou){duel.you-=r;msg='Recuo! A defesa segurou — você perde '+r;}else{duel.foe-=r;msg='Você segurou! −'+r+' no adversário (recuo)';}}
-  else msg='Empate no confronto — ninguém perde Vida';
-  if(bonus)msg+=' · vantagem elemental (+2)';
-  dm(msg);
+  addHp(dSide,R.healD-R.dmgDef);
+  addHp(aSide,R.healA-R.dmgAtk);
+  var youAtk=(aSide==='you');
+  var head;
+  if(R.result>0)head=youAtk?'<b style="color:var(--gold-l)">Acertou!</b>':'<b style="color:var(--danger)">O ataque conectou</b>';
+  else if(R.result<0)head=youAtk?'<b style="color:var(--danger)">Recuo!</b> A defesa segurou':'<b style="color:var(--ok)">Você segurou!</b> Recuo no adversário';
+  else head='<b>Empate no confronto</b>';
+  var dYou=youAtk?(R.healA-R.dmgAtk):(R.healD-R.dmgDef);
+  var dFoe=youAtk?(R.healD-R.dmgDef):(R.healA-R.dmgAtk);
+  var line='<div class="fxline">ATQ <b>'+R.A+'</b>'+(R.bonus?'<span class="fp">+'+R.bonus+'</span>':'')+' vs DEF <b>'+R.Deff+'</b> &nbsp;\u00b7&nbsp; Você '+hpTag(dYou)+' \u00b7 Adversário '+hpTag(dFoe)+'</div>';
+  var mine=youAtk?R.logA:R.logD, theirs=youAtk?R.logD:R.logA;
+  var chips=mine.map(function(t){return '<span>\u2726 '+t+'</span>';}).concat(theirs.map(function(t){return '<span class="foe">\u2726 '+t+'</span>';}));
+  dm(head+line+(chips.length?'<div class="fxlog">'+chips.join('')+'</div>':''));
   renderDuel();
-  setTimeout(function(){if(!duel)return;duel.round++;beginRound();},2000);
+  setTimeout(function(){if(!duel)return;duel.round++;beginRound();},chips.length?2600:2000);
 }
+function hpTag(v){return v===0?'<span class="fz">0</span>':(v>0?'<span class="fp">+'+v+'</span>':'<span class="fn">'+v+'</span>');}
 function renderHand(active){
-  document.getElementById('duelHand').innerHTML=duel.hand.map(function(c,idx){return miniCard(c,idx,{onclick:active?'playCard('+idx+')':'',dim:!active});}).join('');
+  document.getElementById('duelHand').innerHTML=duel.hand.map(function(c,idx){return miniCard(c,idx,{onclick:active?'playCard('+idx+')':'',dim:!active,fx:hasFx(c)});}).join('');
 }
 function elAdv(a,d){return BEATS[a]===d;}
-function slotHTML(c){return miniCard(c);}
-function bestIdx(hand,key){let bi=0,bv=-1;hand.forEach(function(c,i){if(c[key]>bv){bv=c[key];bi=i;}});return bi;}
-function bestDefIdx(hand,atkCard){let bi=0,bv=-99;hand.forEach(function(c,i){let v=c.def;if(atkCard&&BEATS[c.el]===atkCard.el)v+=1.5;if(atkCard&&BEATS[atkCard.el]===c.el)v-=1;if(v>bv){bv=v;bi=i;}});return bi;}
+function slotHTML(c){return miniCard(c,0,{fx:hasFx(c)});}
+/* ---- IA: simula o confronto de verdade, especiais inclusos ---- */
+function bestAtkIdx(hand,myHp,foeHp){
+  var bi=0,bv=-1e9;
+  for(var i=0;i<hand.length;i++){
+    var rest=hand.slice(),c=rest.splice(i,1)[0],tot=0;
+    for(var p=0;p<PHANTOMS.length;p++){
+      var R=computeClash(c,PHANTOMS[p],rest,[],myHp,foeHp);
+      tot+=R.dmgDef-R.dmgAtk*0.9+(R.healA-R.healD)*0.6;
+    }
+    var v=tot/PHANTOMS.length;
+    if(v>bv){bv=v;bi=i;}
+  }
+  return bi;
+}
+function bestDefIdx(hand,atkC,aHand,myHp,foeHp){
+  if(!atkC)return 0;
+  var bi=0,bv=-1e9;
+  for(var i=0;i<hand.length;i++){
+    var rest=hand.slice(),c=rest.splice(i,1)[0];
+    var R=computeClash(atkC,c,aHand||[],rest,foeHp,myHp);
+    var v=-R.dmgDef+R.dmgAtk*0.9+(R.healD-R.healA)*0.6;
+    if(v>bv){bv=v;bi=i;}
+  }
+  return bi;
+}
 function endDuel(){
   clearTimer();renderDuel();
   const win=duel.you>duel.foe,draw=duel.you===duel.foe;
   const ov=document.getElementById('resultOv');
   const title=draw?'EMPATE':(win?'VITÓRIA':'DERROTA');
+  const sub=duel.sudden?'<div style="color:var(--silver-d);font-size:11.5px;margin-top:2px">decidido na morte súbita</div>':'';
   const col=draw?'var(--silver-l)':(win?'var(--gold-l)':'var(--danger)');
   ov.innerHTML='<div class="rt" style="color:'+col+'">'+title+'</div>'+
-    '<div style="color:var(--silver);font-size:13px">Vida final '+Math.max(0,duel.you)+' × '+Math.max(0,duel.foe)+'</div>'+
+    '<div style="color:var(--silver);font-size:13px">Vida final '+Math.max(0,duel.you)+' × '+Math.max(0,duel.foe)+'</div>'+sub+
     (win?'<div style="color:var(--gold-l);font-size:13px;margin-top:4px">+30 Ouro · +25 pts</div>':'')+
     '<button class="btn gold sm" style="margin-top:12px" onclick="go(\'home\')">Voltar à Ilha</button>'+
     '<button class="btn ghost sm" onclick="startDuel()">Jogar de novo</button>';

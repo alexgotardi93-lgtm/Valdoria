@@ -1,5 +1,5 @@
 const { chromium } = require('playwright');
-const DIR='/home/claude/valdoria-jogo';
+const DIR = require('path').join(__dirname, '..');  /* raiz do repo */
 (async () => {
   const b = await chromium.launch();
   const ctx = await b.newContext({ viewport:{width:390,height:844}, deviceScaleFactor:2 });

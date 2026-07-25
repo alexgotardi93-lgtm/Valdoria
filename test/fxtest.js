@@ -5,7 +5,7 @@ const p=await b.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
 const errs=[];
 p.on('console',m=>{if(m.type()==='error'&&!/fonts.g|supabase.co|net::ERR/.test(m.text()))errs.push(m.text());});
 p.on('pageerror',e=>errs.push('PAGEERROR: '+e.message));
-await p.goto('file:///home/claude/valdoria-jogo/index.html');
+await p.goto('file://' + require('path').join(__dirname, '..') + '/index.html');
 await p.waitForTimeout(1200);
 
 const out=await p.evaluate(()=>{

@@ -3,7 +3,7 @@ const {chromium}=require('playwright');
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
 const p=await b.newPage({viewport:{width:390,height:844}});
 const errs=[];p.on('pageerror',e=>errs.push(e.message));
-await p.goto('file:///home/claude/valdoria-jogo/index.html');
+await p.goto('file://' + require('path').join(__dirname, '..') + '/index.html');
 await p.waitForTimeout(900);
 
 const out=await p.evaluate(()=>{

@@ -1,7 +1,7 @@
 /* Testa a Arena, o Ranking e o Perfil do cliente com um Supabase de mentira.
    Nao toca no banco de verdade: so exercita os caminhos do JavaScript. */
 const { chromium } = require('playwright');
-const DIR = '/home/claude/valdoria-jogo';
+const DIR = require('path').join(__dirname, '..');  /* raiz do repo */
 const ok = [], bad = [];
 function t(nome, cond, extra) { (cond ? ok : bad).push(nome + (cond ? '' : ' -> ' + JSON.stringify(extra))); }
 
@@ -100,7 +100,9 @@ function t(nome, cond, extra) { (cond ? ok : bad).push(nome + (cond ? '' : ' -> 
       arenaLimpa: arena === null
     };
   });
-  t('fim: chamou arena_result com vitoria', JSON.stringify(a3.chamadas) === JSON.stringify([['arena_result', { p_win: true }]]), a3.chamadas);
+  /* missions_get entra de carona depois do pagamento (v0.9) — nao conta aqui */
+  const semMiss = l => (l || []).filter(c => c[0] !== 'missions_get');
+  t('fim: chamou arena_result com vitoria', JSON.stringify(semMiss(a3.chamadas)) === JSON.stringify([['arena_result', { p_win: true }]]), a3.chamadas);
   t('fim: nao chamou duel_reward', !JSON.stringify(a3.chamadas).includes('duel_reward'), a3.chamadas);
   t('fim: overlay mostra pontos e ouro', a3.pts === '+27 pts · +40 Ouro', a3.pts);
   t('fim: overlay volta para a Arena', /Voltar à Arena/.test(a3.ov), a3.ov);
@@ -121,7 +123,7 @@ function t(nome, cond, extra) { (cond ? ok : bad).push(nome + (cond ? '' : ' -> 
     await wait(250);
     return { derrota, empate: CALLS.slice(), ovEmpate: document.getElementById('ovPts').textContent };
   });
-  t('derrota: arena_result com p_win false', JSON.stringify(a4.derrota) === JSON.stringify([['arena_result', { p_win: false }]]), a4.derrota);
+  t('derrota: arena_result com p_win false', JSON.stringify(semMiss(a4.derrota)) === JSON.stringify([['arena_result', { p_win: false }]]), a4.derrota);
   t('empate: nao gasta chamada', a4.empate.length === 0, a4.empate);
   t('empate: avisa que nao trocou pontos', /nenhum ponto/.test(a4.ovEmpate), a4.ovEmpate);
 
